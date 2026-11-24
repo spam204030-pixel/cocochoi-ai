@@ -39,7 +39,7 @@
 
 ## 콘텐츠 공장 프로그램 (COCOCHOI AI CONTENT FACTORY) 개발 규칙
 제품과 영상·사진 소재를 넣으면 판매 숏폼 영상과 플랫폼 게시물을 만드는 프로그램이다.
-설계서: `docs/DESIGN.md` (v3.3 확정), AI 프롬프트: `docs/PROMPTS.md`, 변경 기록: `docs/CHANGELOG.md`
+설계서: `docs/DESIGN.md` (v4.0 — 맨 앞 V4 장이 기준), AI 프롬프트: `docs/PROMPTS.md`, 변경 기록: `docs/CHANGELOG.md`
 
 1. **설계서가 기준이다.** 설계를 바꿔야 하면 코드를 쓰기 전에 대표에게 이유를 설명하고 승인받은 뒤 `docs/CHANGELOG.md`에 기록한다.
 2. **한 번에 한 작업만.** 설계서 10장의 작업 번호(예: 0-2) 하나만 개발한다. 다른 작업을 미리 만들지 않는다.
