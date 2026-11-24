@@ -13,4 +13,15 @@ def won(value) -> str:
     return "" if value is None else f"{int(value):,}원"
 
 
+def seconds(value) -> str:
+    """20.8 → '20.8초'"""
+    return "" if value is None else f"{value:.1f}초"
+
+
+def megabytes(value) -> str:
+    return "" if value is None else f"{value / 1024 / 1024:.1f}MB"
+
+
 templates.env.filters["won"] = won
+templates.env.filters["seconds"] = seconds
+templates.env.filters["mb"] = megabytes

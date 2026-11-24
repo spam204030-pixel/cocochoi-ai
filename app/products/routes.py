@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.assets.service import list_assets
 from app.core.errors import AppError
 from app.products import service
 from app.products.schemas import FIELD_LABELS, ProductCreate, ProductOut, ProductUpdate
@@ -118,8 +119,10 @@ def page_detail(request: Request, product_id: int, session: Session = Depends(ge
         "products/detail.html",
         {
             "product": product,
-            "saved": request.query_params.get("saved"),
-            "error": request.query_params.get("error"),
+            "assets": list_assets(session, product_id),
+            "q": request.query_params,
+            "max_upload_mb": request.app.state.settings.max_upload_mb,
+            "ffmpeg": request.app.state.ffmpeg,
         },
     )
 

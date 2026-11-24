@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     ffmpeg_path: str | None = None
     ffprobe_path: str | None = None
 
+    # 업로드 한 파일당 최대 크기 (MB)
+    max_upload_mb: int = 500
+
     # 로그 수준 (DEBUG / INFO / WARNING / ERROR)
     log_level: str = "INFO"
 
@@ -72,6 +75,14 @@ class Settings(BaseSettings):
         return self.storage_dir / "logs"
 
     @property
+    def assets_dir(self) -> Path:
+        return self.storage_dir / "assets"
+
+    @property
+    def tmp_dir(self) -> Path:
+        return self.storage_dir / "tmp"
+
+    @property
     def db_path(self) -> Path:
         return self.storage_dir / "cocochoi.db"
 
@@ -87,6 +98,8 @@ class Settings(BaseSettings):
         """storage/ 와 storage/logs/ 폴더가 없으면 만든다."""
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.logs_dir.mkdir(parents=True, exist_ok=True)
+        self.assets_dir.mkdir(parents=True, exist_ok=True)
+        self.tmp_dir.mkdir(parents=True, exist_ok=True)
 
     def storage_writable(self) -> bool:
         """storage/ 폴더에 실제로 쓸 수 있는지 확인한다."""

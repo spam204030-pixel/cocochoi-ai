@@ -1,0 +1,112 @@
+<div class="card" id="assets">
+  <h2 style="font-size:18px;margin:0 0 4px">사진·영상 <span class="muted">({{ assets|length }}개)</span></h2>
+  <p class="muted" style="margin:0 0 12px">사진: jpg·png·webp·heic · 영상: mp4·mov·m4v·webm · 파일 하나당 최대 {{ max_upload_mb }}MB</p>
+  {% if q.get("uploaded") %}<div class="notice ok">{{ q.get("uploaded") }}개 파일을 올렸습니다.</div>{% endif %}
+  {% if q.get("asset_deleted") %}<div class="notice ok">파일을 삭제했습니다.</div>{% endif %}
+  {% if q.get("error") == "asset_in_use" %}<div class="notice err">콘텐츠 제작에 쓰이고 있는 파일이라 삭제할 수 없습니다.</div>{% endif %}
+
+  {% if not ffmpeg.installed %}
+  <div class="notice err">영상 처리 프로그램(FFmpeg)이 없어 업로드할 수 없습니다. <a href="/">처음 화면</a>의 설치 방법을 따라 주세요.</div>
+  {% else %}
+  <form id="upload-form" method="post" action="/products/{{ product.id }}/upload" enctype="multipart/form-data">
+    <label id="dropzone" for="files" style="display:block;border:2px dashed #d8cfc2;border-radius:12px;padding:28px;text-align:center;cursor:pointer;background:#fdfbf8;font-weight:400">
+      <strong style="font-size:16px">여기로 사진·영상을 끌어다 놓거나 눌러서 고르세요</strong><br>
+      <span class="muted">여러 개를 한 번에 올릴 수 있습니다</span>
+      <input type="file" id="files" name="files" multiple accept="image/*,video/*,.heic,.heif" style="display:none">
+    </label>
+    <div class="row" style="margin-top:12px">
+      <label style="margin:0;font-weight:600">영상 종류</label>
+      <label style="margin:0;font-weight:400"><input type="radio" name="video_kind" value="footage" checked> 영상 소재 (샤오홍슈 등)</label>
+      <label style="margin:0;font-weight:400"><input type="radio" name="video_kind" value="own_clip"> 직접 촬영</label>
+    </div>
+    <label for="source_url">출처 URL <span class="hint">(선택 · 이번에 올리는 파일 모두에 적용)</span></label>
+    <input type="text" id="source_url" name="source_url" placeholder="https://www.xiaohongshu.com/...">
+    <label for="source_memo">메모 <span class="hint">(선택)</span></label>
+    <input type="text" id="source_memo" name="source_memo">
+    <div id="upload-list" style="margin-top:12px"></div>
+    <noscript><button class="btn" type="submit" style="margin-top:12px">올리기</button></noscript>
+  </form>
+  {% endif %}
+
+  {% if assets %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:20px">
+    {% for a in assets %}
+    <div id="asset-{{ a.id }}" style="border:1px solid #eee;border-radius:10px;overflow:hidden;background:#fff">
+      <a href="/media/{{ a.id }}/file" target="_blank" rel="noopener">
+        <img src="/media/{{ a.id }}/thumb" alt="{{ a.original_name }}" loading="lazy" style="width:100%;aspect-ratio:9/16;object-fit:cover;background:#f3efe9;display:block">
+      </a>
+      <div style="padding:10px 12px;font-size:13px">
+        <div style="font-weight:600;word-break:break-all">{{ a.original_name }}</div>
+        <div class="muted">
+          {{ "사진" if a.kind == "product_photo" else ("영상 소재" if a.kind == "footage" else "직접 촬영") }}
+          · {{ a.width }}×{{ a.height }}{% if a.duration %} · {{ a.duration | seconds }} · {{ "소리 있음" if a.has_audio else "소리 없음" }}{% endif %}
+          · {{ a.file_size | mb }}
+        </div>
+        <details style="margin-top:6px">
+          <summary class="muted">출처·메모{% if a.source_url or a.source_memo %} ✓{% endif %}</summary>
+          <form method="post" action="/assets/{{ a.id }}/source">
+            <input type="text" name="source_url" value="{{ a.source_url or '' }}" placeholder="출처 URL" style="margin-top:6px;font-size:13px">
+            <input type="text" name="source_memo" value="{{ a.source_memo or '' }}" placeholder="메모" style="margin-top:6px;font-size:13px">
+            <button class="btn light" type="submit" style="margin-top:6px;padding:6px 12px;font-size:13px">저장</button>
+          </form>
+        </details>
+        <form method="post" action="/assets/{{ a.id }}/delete" onsubmit="return confirm('이 파일을 삭제할까요? 되돌릴 수 없습니다.');">
+          <button class="btn danger" type="submit" style="margin-top:8px;padding:6px 12px;font-size:13px">삭제</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  const form = document.getElementById("upload-form");
+  if (!form) return;
+  const input = document.getElementById("files"), zone = document.getElementById("dropzone");
+  const list = document.getElementById("upload-list");
+  const apiUrl = "/api/products/{{ product.id }}/assets";
+
+  ["dragenter", "dragover"].forEach(e => zone.addEventListener(e, ev => { ev.preventDefault(); zone.style.background = "#f3ece2"; }));
+  ["dragleave", "drop"].forEach(e => zone.addEventListener(e, ev => { ev.preventDefault(); zone.style.background = "#fdfbf8"; }));
+  zone.addEventListener("drop", ev => upload(ev.dataTransfer.files));
+  input.addEventListener("change", () => upload(input.files));
+
+  function upload(files) {
+    if (!files || !files.length) return;
+    const data = new FormData();
+    for (const f of files) data.append("files", f);
+    ["video_kind", "source_url", "source_memo"].forEach(n => {
+      const el = form.querySelector(`[name=${n}]:checked`) || form.querySelector(`[name=${n}]`);
+      data.append(n, el ? el.value : "");
+    });
+    list.innerHTML = `<div class="muted">올리는 중… <span id="pct">0</span>% (${files.length}개)</div>
+      <div style="height:8px;background:#eee;border-radius:4px;margin-top:6px"><div id="bar" style="height:8px;width:0;background:#222;border-radius:4px"></div></div>`;
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", apiUrl);
+    xhr.upload.onprogress = e => {
+      if (!e.lengthComputable) return;
+      const p = Math.round(e.loaded / e.total * 100);
+      document.getElementById("pct").textContent = p;
+      document.getElementById("bar").style.width = p + "%";
+    };
+    xhr.onload = () => {
+      let body = {};
+      try { body = JSON.parse(xhr.responseText); } catch (e) {}
+      if (xhr.status !== 200 || !body.results) {
+        const msg = (body.error && body.error.message) || "업로드 중 문제가 생겼습니다.";
+        list.innerHTML = `<div class="notice err">${msg}</div>`;
+        return;
+      }
+      const fails = body.results.filter(r => !r.ok);
+      if (!fails.length) { location.href = location.pathname + "?uploaded=" + body.ok_count + "#assets"; return; }
+      list.innerHTML = body.results.map(r => `<div class="notice ${r.ok ? "ok" : "err"}">${escapeHtml(r.filename)} — ${escapeHtml(r.message)}</div>`).join("")
+        + `<a class="btn light" href="${location.pathname}#assets">새로고침</a>`;
+    };
+    xhr.onerror = () => { list.innerHTML = `<div class="notice err">프로그램에 연결할 수 없습니다. 프로그램이 켜져 있는지 확인해 주세요.</div>`; };
+    xhr.send(data);
+  }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+})();
+</script>

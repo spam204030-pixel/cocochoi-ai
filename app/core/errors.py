@@ -22,6 +22,10 @@ class ErrorCode(StrEnum):
     AI_BAD_OUTPUT = "AI_BAD_OUTPUT"
     STORAGE_ERROR = "STORAGE_ERROR"
     PRODUCT_IN_USE = "PRODUCT_IN_USE"
+    ASSET_DUPLICATE = "ASSET_DUPLICATE"
+    ASSET_IN_USE = "ASSET_IN_USE"
+    UNSUPPORTED_FILE = "UNSUPPORTED_FILE"
+    FILE_TOO_LARGE = "FILE_TOO_LARGE"
     FFMPEG_MISSING = "FFMPEG_MISSING"
     MEDIA_UNREADABLE = "MEDIA_UNREADABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
@@ -78,6 +82,20 @@ ERRORS: dict[ErrorCode, ErrorInfo] = {
         409,
         "이 제품으로 만든 콘텐츠가 있어서 삭제할 수 없습니다.",
         "연결된 콘텐츠를 먼저 정리한 뒤 다시 삭제해 주세요.",
+    ),
+    ErrorCode.ASSET_DUPLICATE: ErrorInfo(
+        409, "이미 올린 파일입니다.", "같은 파일은 한 번만 올리면 됩니다. 기존 파일을 사용해 주세요."
+    ),
+    ErrorCode.ASSET_IN_USE: ErrorInfo(
+        409, "콘텐츠 제작에 쓰이고 있는 파일이라 삭제할 수 없습니다.", "연결된 콘텐츠를 먼저 정리해 주세요."
+    ),
+    ErrorCode.UNSUPPORTED_FILE: ErrorInfo(
+        415,
+        "올릴 수 없는 파일 형식입니다.",
+        "사진은 jpg·png·webp·heic, 영상은 mp4·mov·m4v·webm 파일로 올려 주세요.",
+    ),
+    ErrorCode.FILE_TOO_LARGE: ErrorInfo(
+        413, "파일이 너무 큽니다.", "영상 길이를 줄이거나 화질을 낮춰서 다시 올려 주세요."
     ),
     ErrorCode.FFMPEG_MISSING: ErrorInfo(
         503,

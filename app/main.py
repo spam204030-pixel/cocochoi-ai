@@ -10,6 +10,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.assets.routes import api as assets_api
+from app.assets.routes import pages as assets_pages
 from app.core.db import Database
 from app.core.errors import ERRORS, AppError, ErrorCode, error_payload
 from app.core.logging import get_logger, setup_logging
@@ -20,7 +22,7 @@ from app.products.routes import pages as products_pages
 from app.web.templating import templates
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.5"
+APP_VERSION = "0.0.6"
 
 
 _HTTP_STATUS_TO_CODE = {
@@ -87,6 +89,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(products_api)
     app.include_router(products_pages)
+    app.include_router(assets_api)
+    app.include_router(assets_pages)
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError):
