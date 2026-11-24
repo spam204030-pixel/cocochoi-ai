@@ -21,6 +21,8 @@ def make_engine(db_url: str) -> Engine:
     def _sqlite_pragmas(dbapi_conn, _record):
         cur = dbapi_conn.cursor()
         cur.execute("PRAGMA foreign_keys=ON")  # 연결된 자료가 어긋나지 않게
+        cur.execute("PRAGMA journal_mode=WAL")  # 화면과 작업자가 동시에 읽고 쓸 수 있게
+        cur.execute("PRAGMA busy_timeout=5000")
         cur.close()
 
     return engine

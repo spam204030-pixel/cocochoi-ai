@@ -28,6 +28,8 @@ class ErrorCode(StrEnum):
     FILE_TOO_LARGE = "FILE_TOO_LARGE"
     PROJECT_NEEDS_PHOTO = "PROJECT_NEEDS_PHOTO"
     PROJECT_LOCKED = "PROJECT_LOCKED"
+    PROJECT_ALREADY_RUNNING = "PROJECT_ALREADY_RUNNING"
+    INVALID_ACTION = "INVALID_ACTION"
     FFMPEG_MISSING = "FFMPEG_MISSING"
     MEDIA_UNREADABLE = "MEDIA_UNREADABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
@@ -108,6 +110,12 @@ ERRORS: dict[ErrorCode, ErrorInfo] = {
         409,
         "제작이 시작된 콘텐츠는 설정을 바꿀 수 없습니다.",
         "제작이 끝난 뒤 새 콘텐츠로 다시 만들어 주세요.",
+    ),
+    ErrorCode.PROJECT_ALREADY_RUNNING: ErrorInfo(
+        409, "이미 제작이 진행 중입니다.", "진행이 끝나거나 멈춘 뒤 다시 시도해 주세요."
+    ),
+    ErrorCode.INVALID_ACTION: ErrorInfo(
+        409, "지금 상태에서는 할 수 없는 동작입니다.", "화면을 새로고침해서 현재 상태를 확인해 주세요."
     ),
     ErrorCode.FFMPEG_MISSING: ErrorInfo(
         503,

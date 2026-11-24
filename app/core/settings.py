@@ -38,6 +38,14 @@ class Settings(BaseSettings):
     # 업로드 한 파일당 최대 크기 (MB)
     max_upload_mb: int = 500
 
+    # 작업자(백그라운드 작업 처리). 테스트에서는 끄고 직접 실행
+    worker_enabled: bool = True
+    worker_poll_seconds: float = 0.5
+
+    # 시험 실행(가짜 작업): 단계당 걸리는 시간, 일부러 실패시킬 단계(시험용)
+    fake_step_seconds: float = 1.5
+    fake_fail_step: str | None = None
+
     # 로그 수준 (DEBUG / INFO / WARNING / ERROR)
     log_level: str = "INFO"
 
@@ -48,7 +56,7 @@ class Settings(BaseSettings):
             return None
         return value
 
-    @field_validator("ffmpeg_path", "ffprobe_path", mode="before")
+    @field_validator("ffmpeg_path", "ffprobe_path", "fake_fail_step", mode="before")
     @classmethod
     def _empty_path_is_none(cls, value):
         if value is None or (isinstance(value, str) and not value.strip()):

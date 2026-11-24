@@ -4,6 +4,7 @@
 """
 
 import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -17,6 +18,9 @@ from app.core.errors import ERRORS, AppError, ErrorCode, error_payload
 from app.core.logging import get_logger, setup_logging
 from app.core.settings import Settings, get_settings
 from app.media.probe import WINDOWS_INSTALL_GUIDE, check_ffmpeg
+from app.pipeline.routes import api as pipeline_api
+from app.pipeline.routes import pages as pipeline_pages
+from app.pipeline.worker import Worker
 from app.products.routes import api as products_api
 from app.products.routes import pages as products_pages
 from app.projects.routes import api as projects_api
@@ -24,7 +28,7 @@ from app.projects.routes import pages as projects_pages
 from app.web.templating import templates
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.7"
+APP_VERSION = "0.0.8"
 
 
 _HTTP_STATUS_TO_CODE = {
@@ -54,11 +58,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings.ensure_storage()
     logger = setup_logging(settings.logs_dir, settings.log_level)
 
-    app = FastAPI(title=APP_NAME, version=APP_VERSION)
-    app.state.settings = settings
     db = Database(settings.db_path)
     db.init()  # DB 파일 생성 + 최신 구조로 맞춤 (기존 데이터 유지)
+    worker = Worker(db.session_factory, settings)
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        if settings.worker_enabled:
+            worker.start()  # 뒤에서 제작 작업을 처리 (별도 창 불필요)
+        yield
+        if settings.worker_enabled:
+            worker.stop()
+
+    app = FastAPI(title=APP_NAME, version=APP_VERSION, lifespan=lifespan)
+    app.state.settings = settings
     app.state.db = db
+    app.state.worker = worker
     ffmpeg = check_ffmpeg(settings.ffmpeg_path, settings.ffprobe_path)
     app.state.ffmpeg = ffmpeg
     log = get_logger("web")
@@ -95,6 +110,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(assets_pages)
     app.include_router(projects_api)
     app.include_router(projects_pages)
+    app.include_router(pipeline_api)
+    app.include_router(pipeline_pages)
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError):

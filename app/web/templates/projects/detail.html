@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ project.title }} · COCOCHOI{% endblock %}
+{% block head %}{% if pipe.status == "running" %}<meta http-equiv="refresh" content="2">{% endif %}{% endblock %}
 {% block content %}
 {% if saved %}<div class="notice ok">저장했습니다.</div>{% endif %}
 <div class="row" style="justify-content: space-between; margin-bottom: 16px;">
   <h1 style="margin:0">{{ project.title }}</h1>
   {% if project.status == "ready" %}<a class="btn light" href="/projects/{{ project.id }}/edit">설정 수정</a>{% endif %}
 </div>
+{% include "projects/_pipeline.html" %}
 <div class="card">
-  <p><strong>상태</strong> · {{ project.board_status }} <span class="muted">(준비됨 — 제작 기능은 다음 단계에서 연결됩니다)</span></p>
   <p><strong>제품</strong> · <a href="/products/{{ product.id }}">{{ product.name }}</a></p>
   <p><strong>영상 길이</strong> · {{ project.target_length }}초</p>
   <p><strong>스타일 프리셋</strong> · {{ "자동 추천" if project.style_preset == "auto" else project.style_preset }} <span class="muted">{{ presets.get(project.style_preset, "") }}</span></p>

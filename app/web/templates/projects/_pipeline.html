@@ -1,0 +1,66 @@
+{% set MSG = {
+  "start": ("ok", "시험 실행을 시작했습니다."), "pause": ("ok", "지금 단계가 끝나면 멈춥니다."),
+  "resume": ("ok", "이어서 진행합니다."), "cancel": ("ok", "제작을 취소했습니다. 끝난 단계 결과는 남아 있습니다."),
+  "rerun": ("ok", "선택한 단계부터 다시 진행합니다."),
+  "PROJECT_ALREADY_RUNNING": ("err", "이미 제작이 진행 중입니다."),
+  "INVALID_ACTION": ("err", "지금 상태에서는 할 수 없는 동작입니다. 화면을 새로고침해 주세요."),
+} %}
+<div class="card" id="pipeline">
+  <div class="row" style="justify-content:space-between">
+    <h2 style="font-size:18px;margin:0">제작 진행 <span class="muted" style="font-size:14px">· {{ pipe.status_label }} · {{ pipe.done_count }}/{{ pipe.steps|length }}단계 완료</span></h2>
+    <span class="muted" style="font-size:13px">현재는 시험 실행(가짜 작업)만 가능 · AI 비용 0원</span>
+  </div>
+  {% if msg and msg in MSG %}<div class="notice {{ MSG[msg][0] }}" style="margin-top:12px">{{ MSG[msg][1] }}</div>{% endif %}
+
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:16px 0">
+    {% for st in pipe.steps %}
+    <span title="{{ st.label }}{% if st.version > 1 %} · v{{ st.version }}{% endif %}" style="padding:6px 10px;border-radius:999px;font-size:14px;
+      background:{{ {'완료':'#e6f4ea','진행 중':'#e7efff','오류':'#fdf0f0','사용자 확인 필요':'#fff8e1'}.get(st.label, '#f3f1ee') }};
+      color:{{ {'완료':'#1e6b34','진행 중':'#1d4ed8','오류':'#a12828','사용자 확인 필요':'#8a6100'}.get(st.label, '#777') }}">
+      {{ st.icon }} {{ st.name }}</span>{% if not loop.last %}<span class="muted">→</span>{% endif %}
+    {% endfor %}
+    <span class="muted">→</span>
+    <span style="padding:6px 10px;border-radius:999px;font-size:14px;background:{{ '#fff8e1' if pipe.status == 'waiting_user' else '#f3f1ee' }};color:{{ '#8a6100' if pipe.status == 'waiting_user' else '#777' }}">
+      {{ "⚠ 대표님 확인" if pipe.status == "waiting_user" else "○ 완료" }}</span>
+  </div>
+
+  {% if pipe.status == "waiting_user" %}<div class="notice ok">시험 실행이 끝났습니다. 실제 AI·편집 기능은 Phase 1부터 단계별로 연결됩니다.</div>{% endif %}
+  {% if pipe.status == "failed" %}<div class="notice err">오류로 멈췄습니다. 앞 단계 결과는 남아 있으니 오류 난 단계만 다시 실행하면 됩니다.</div>{% endif %}
+
+  <div class="row">
+    {% if pipe.status in ("ready", "cancelled") %}
+    <form method="post" action="/projects/{{ project.id }}/run/start"><button class="btn" type="submit">▶ 시험 실행 시작</button></form>
+    {% endif %}
+    {% if pipe.status == "running" %}
+    <form method="post" action="/projects/{{ project.id }}/run/pause"><button class="btn light" type="submit">⏸ 일시정지</button></form>
+    {% endif %}
+    {% if pipe.status == "paused" %}
+    <form method="post" action="/projects/{{ project.id }}/run/resume"><button class="btn" type="submit">▶ 재개</button></form>
+    {% endif %}
+    {% if pipe.status in ("running", "paused", "failed") %}
+    <form method="post" action="/projects/{{ project.id }}/run/cancel" onsubmit="return confirm('제작을 취소할까요? 끝난 단계 결과는 남습니다.');"><button class="btn danger" type="submit">취소</button></form>
+    {% endif %}
+  </div>
+
+  {% if pipe.status in ("failed", "cancelled", "waiting_user") and pipe.done_count + (1 if pipe.status == "failed" else 0) > 0 %}
+  <details style="margin-top:14px" {{ "open" if pipe.status == "failed" }}>
+    <summary class="muted">단계별 다시 실행</summary>
+    <table style="margin-top:8px">
+      {% set ns = namespace(ok=true) %}
+      {% for st in pipe.steps %}
+      <tr>
+        <td>{{ st.icon }} {{ st.name }}{% if st.version > 1 %} <span class="muted">v{{ st.version }}</span>{% endif %}{% if st.error %} <span class="field-error" style="display:inline">({{ st.error }})</span>{% endif %}</td>
+        <td style="text-align:right">
+          {% if ns.ok and st.status in ("succeeded", "failed", "cancelled") %}
+          <form method="post" action="/projects/{{ project.id }}/steps/{{ st.key }}/rerun" style="display:inline">
+            <button class="btn {{ '' if st.status == 'failed' else 'light' }}" type="submit" style="padding:6px 12px;font-size:13px">{{ "이 단계 다시 실행" if st.status == "failed" else "여기서부터 다시" }}</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% if st.status != "succeeded" %}{% set ns.ok = false %}{% endif %}
+      {% endfor %}
+    </table>
+  </details>
+  {% endif %}
+</div>

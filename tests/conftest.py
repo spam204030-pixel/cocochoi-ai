@@ -18,7 +18,13 @@ FAKE_KEY = "sk-" + "ant-" + "abcdefghijklmnop1234"
 @pytest.fixture
 def tmp_settings(tmp_path):
     """테스트마다 임시 폴더를 데이터 폴더로 쓴다 (실제 storage/는 건드리지 않음)."""
-    return Settings(_env_file=None, storage_dir=tmp_path / "storage", anthropic_api_key=None)
+    return Settings(
+        _env_file=None,
+        storage_dir=tmp_path / "storage",
+        anthropic_api_key=None,
+        worker_enabled=False,  # 테스트는 작업자를 직접 실행
+        fake_step_seconds=0,
+    )
 
 
 @pytest.fixture
