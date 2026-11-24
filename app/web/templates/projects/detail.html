@@ -29,8 +29,16 @@
     {% endfor %}
   </div>
   {% for a in assets if segments.get(a.id) %}
-  <div style="margin-top:12px;font-size:13px"><strong>영상 {{ loop.index }} 장면 {{ segments[a.id]|length }}개</strong>
-    <span class="muted">{% for sg in segments[a.id] %}{{ sg.idx }}) {{ "%.1f"|format(sg.start) }}–{{ "%.1f"|format(sg.end) }}초{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+  <h3 style="font-size:15px;margin:18px 0 8px">영상 {{ loop.index }} · 장면 {{ segments[a.id]|length }}개</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px">
+    {% for sg in segments[a.id] %}
+    <div style="border:1px solid #eee;border-radius:8px;overflow:hidden;background:#fff;font-size:12px">
+      {% if sg.thumb_path %}<img src="/media/segments/{{ sg.id }}/thumb" alt="" loading="lazy" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block">{% endif %}
+      <div style="padding:4px 6px"><strong>{{ sg.idx }}</strong> <span class="muted">{{ "%.1f"|format(sg.start) }}–{{ "%.1f"|format(sg.end) }}초</span>
+        {% if sg.quality is not none %}<br>화질 {{ sg.quality }}{% for l in seg_labels(sg) %} <span style="color:#a12828">{{ l }}</span>{% endfor %}{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
   {% endfor %}
 </div>
 {% endblock %}

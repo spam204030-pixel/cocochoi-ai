@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.assets.service import list_assets
 from app.core.errors import AppError
+from app.media.frames import labels as seg_labels
 from app.media.scenes import segments_for
 from app.pipeline.engine import pipeline_state
 from app.products.routes import get_session
@@ -172,6 +173,7 @@ def page_detail(request: Request, project_id: int, session: Session = Depends(ge
             "saved": request.query_params.get("saved"),
             "msg": request.query_params.get("msg"),
             "pipe": pipeline_state(session, project_id),
+            "seg_labels": seg_labels,
             "segments": segments_for(session, [a.id for a in service.project_assets(session, project_id)]),
             **CHOICES,
         },

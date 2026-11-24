@@ -81,6 +81,7 @@ def ai_step(ctx) -> dict:
 def media_prep(ctx) -> dict:
     """소재 준비: 영상마다 장면 나누기 (작업 1-2). 이미 나눈 영상은 건너뛴다."""
     from app.assets.service import VIDEO_KINDS, asset_file
+    from app.media.frames import measure_segments
     from app.media.scenes import segment_asset
     from app.projects.service import project_assets
 
@@ -90,9 +91,11 @@ def media_prep(ctx) -> dict:
         for asset in videos:
             if ctx.should_stop():
                 raise StepCancelled
-            counts[str(asset.id)] = segment_asset(s, asset, asset_file(ctx.settings, asset))
+            path = asset_file(ctx.settings, asset)
+            counts[str(asset.id)] = segment_asset(s, asset, path)
+            measure_segments(s, asset, path, ctx.settings.storage_dir)
             s.commit()
-    return {"message": f"영상 {len(videos)}개 장면 나누기 완료", "segments": counts}
+    return {"message": f"영상 {len(videos)}개 장면 나누기·화질 측정 완료", "segments": counts}
 
 
 HANDLERS = {key: (ai_step if key in AI_STEPS else fake_step) for key in STEP_KEYS}

@@ -202,4 +202,10 @@ class FootageSegment(Base):
     start: Mapped[float] = mapped_column(Float, nullable=False)  # 초
     end: Mapped[float] = mapped_column(Float, nullable=False)
     duration: Mapped[float] = mapped_column(Float, nullable=False)
+    # 작업 1-3: 대표 사진(storage 기준 경로)과 화질 측정
+    thumb_path: Mapped[str | None] = mapped_column(String(300))
+    sharpness: Mapped[float | None] = mapped_column(Float)  # 선명도 (클수록 선명)
+    shake: Mapped[float | None] = mapped_column(Float)  # 연속 프레임 화면 변화량 (클수록 흔들림)
+    brightness: Mapped[float | None] = mapped_column(Float)  # 평균 밝기 0~255
+    quality: Mapped[int | None] = mapped_column(Integer)  # 화질 점수 0~100
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

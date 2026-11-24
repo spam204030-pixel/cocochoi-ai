@@ -96,6 +96,17 @@ def media_thumb(request: Request, asset_id: int, session: Session = Depends(get_
     return FileResponse(path, media_type="image/jpeg")
 
 
+@api.get("/media/segments/{segment_id}/thumb")
+def segment_thumb(request: Request, segment_id: int, session: Session = Depends(get_session)):
+    from app.core.models import FootageSegment
+
+    seg = session.get(FootageSegment, segment_id)
+    path = request.app.state.settings.storage_dir / seg.thumb_path if seg and seg.thumb_path else None
+    if path is None or not path.is_file():
+        raise AppError(ErrorCode.NOT_FOUND, "장면 사진 없음")
+    return FileResponse(path, media_type="image/jpeg")
+
+
 @api.get("/media/{asset_id}/file")
 def media_file(request: Request, asset_id: int, session: Session = Depends(get_session)):
     asset = service.get_asset(session, asset_id)
