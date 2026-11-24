@@ -26,7 +26,9 @@ class ConnectionCheck(BaseModel):
     note: str = ""
 
 
-SCHEMAS: dict[str, type[BaseModel]] = {"PING": ConnectionCheck}
+from app.prompts.schemas import AnalysisResult  # noqa: E402
+
+SCHEMAS: dict[str, type[BaseModel]] = {"PING": ConnectionCheck, "ANALYSIS": AnalysisResult}
 
 
 @dataclass
@@ -50,7 +52,7 @@ class ClaudeCodeBridge:
     def _resp_path(self, rid: str) -> Path:
         return self.dir / "responses" / f"{rid}.json"
 
-    def _write_request(self, row: BridgeRequest, prompt: str, attachments: list[str]) -> None:
+    def _write_request(self, row: BridgeRequest, prompt: str, attachments: list[str], extra=None) -> None:
         schema = SCHEMAS[row.call_key].model_json_schema()
         body = {
             "request_id": row.request_id,
@@ -63,10 +65,13 @@ class ClaudeCodeBridge:
             "output_schema": schema,
             "retry_reason": row.retry_reason,
             "response_path": str(self._resp_path(row.request_id)),
+            **(extra or {}),
         }
         self._req_path(row.request_id).write_text(json.dumps(body, ensure_ascii=False, indent=2), "utf-8")
 
-    def create(self, *, project_id, job_id, run_id, step, call, batch, prompt, attachments=()) -> str:
+    def create(
+        self, *, project_id, job_id, run_id, step, call, batch, prompt, attachments=(), extra=None
+    ) -> str:
         rid = f"p{project_id}-{step}-r{run_id}"
         with self.session_factory() as s:
             row = BridgeRequest(
@@ -80,7 +85,7 @@ class ClaudeCodeBridge:
             )
             s.add(row)
             s.flush()
-            self._write_request(row, prompt, list(attachments))
+            self._write_request(row, prompt, list(attachments), extra)
             s.commit()
         log.info("요청서 생성 %s (묶음 %s)", rid, batch)
         return rid
@@ -94,8 +99,10 @@ class ClaudeCodeBridge:
         if not resp.exists():
             return None
         raw = resp.read_text("utf-8-sig")
+        body = json.loads(self._req_path(row.request_id).read_text("utf-8"))
+        context = {"segment_ids": body.get("valid_segment_ids")}
         try:
-            data = SCHEMAS[row.call_key].model_validate(json.loads(raw)).model_dump()
+            data = SCHEMAS[row.call_key].model_validate(json.loads(raw), context=context).model_dump()
         except (json.JSONDecodeError, ValidationError) as exc:
             reason = f"응답 형식 오류: {str(exc)[:500]}"
             resp.unlink()
@@ -106,8 +113,8 @@ class ClaudeCodeBridge:
                 return BridgeResult(row, "failed", error=reason)
             row.attempts += 1
             row.retry_reason = reason
-            body = json.loads(self._req_path(row.request_id).read_text("utf-8"))
-            self._write_request(row, body["prompt"], body["attachments"])
+            extra = {"valid_segment_ids": body["valid_segment_ids"]} if "valid_segment_ids" in body else None
+            self._write_request(row, body["prompt"], body["attachments"], extra)
             log.info("재요청 %s", row.request_id)
             return BridgeResult(row, "retry", error=reason)
         row.status, row.finished_at = "done", utcnow()

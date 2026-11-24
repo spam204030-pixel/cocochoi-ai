@@ -14,7 +14,7 @@ STEPS: list[tuple[str, str]] = [
     ("package", "결과 패키지"),
 ]
 # AI 단계 → (호출, 묶음 번호). /공장 한 번에 같은 묶음을 모두 처리
-AI_STEPS = {"analysis": ("PING", 1), "planning": ("PING", 2), "captions": ("PING", 3)}
+AI_STEPS = {"analysis": ("ANALYSIS", 1), "planning": ("PING", 2), "captions": ("PING", 3)}
 STEP_KEYS = [k for k, _ in STEPS]
 STEP_NAMES = dict(STEPS)
 

@@ -43,8 +43,24 @@ def requests(bridge):
     return sorted((bridge / "requests").glob("*.json"))
 
 
+ANALYSIS_OK = {
+    "scenes": [],
+    "identity": "발열양말",
+    "features": [],
+    "buy_reasons": ["발이 시림"],
+    "worries": [],
+    "purchase_points": [{"point": "따뜻함", "situation": "겨울 출근", "source": "user_input"}],
+    "targets": [{"situation": "수족냉증", "persona": "40대", "likelihood": "상", "reason": "-"}],
+    "differentiators": [],
+    "banned_claims": [],
+    "needs_confirmation": [],
+}
+
+
 def answer(bridge, body):
     req = json.loads(requests(bridge)[0].read_text("utf-8"))
+    if body == "auto":
+        body = ANALYSIS_OK if req["call"] == "ANALYSIS" else {"ok": True, "note": "확인"}
     (bridge / "responses" / f"{req['request_id']}.json").write_text(
         body if isinstance(body, str) else json.dumps(body), "utf-8"
     )
@@ -63,7 +79,7 @@ def test_ai_step_waits_with_request_file(env):
     assert step_status(db, pid, "analysis") == "waiting_ai"
     assert state(db, pid)["status"] == "running"
     req = json.loads(requests(bridge)[0].read_text("utf-8"))
-    assert req["batch"] == 1 and req["call"] == "PING" and "output_schema" in req
+    assert req["batch"] == 1 and req["call"] == "ANALYSIS" and "output_schema" in req
     page = TestClient(app).get(f"/projects/{pid}").text
     assert "/공장" in page and "Claude 처리 대기" in page
     with pytest.raises(AppError):  # 대기 중에도 중복 시작 불가
@@ -75,7 +91,7 @@ def test_full_run_with_three_batches(env):
     start(db, pid)
     for batch in (1, 2, 3):
         wait_until_idle(worker)
-        req = answer(bridge, {"ok": True, "note": "확인"})
+        req = answer(bridge, "auto")
         assert req["batch"] == batch
         assert worker.poll_bridge() == 1
     wait_until_idle(worker)
@@ -109,7 +125,7 @@ def test_waiting_survives_restart(env, tmp_settings):
     with db.session_factory() as s:
         engine.recover(s)
     assert step_status(db, pid, "analysis") == "waiting_ai"
-    answer(bridge, {"ok": True})
+    answer(bridge, "auto")
     assert restarted.poll_bridge() == 1
     wait_until_idle(restarted)
     assert step_status(db, pid, "planning") == "waiting_ai"

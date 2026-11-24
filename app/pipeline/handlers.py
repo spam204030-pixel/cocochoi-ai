@@ -66,6 +66,9 @@ def ai_step(ctx) -> dict:
     if ctx.should_stop():
         raise StepCancelled
     call, batch = AI_STEPS[ctx.step]
+    prompt, attachments, extra = PING_PROMPT.format(batch=batch, step=STEP_NAMES[ctx.step]), [], None
+    if call == "ANALYSIS":
+        prompt, attachments, extra = analysis_request(ctx)
     rid = ctx.bridge.create(
         project_id=ctx.project_id,
         job_id=ctx.job_id,
@@ -73,9 +76,65 @@ def ai_step(ctx) -> dict:
         step=ctx.step,
         call=call,
         batch=batch,
-        prompt=PING_PROMPT.format(batch=batch, step=STEP_NAMES[ctx.step]),
+        prompt=prompt,
+        attachments=attachments,
+        extra=extra,
     )
     raise StepWaiting(rid)
+
+
+def analysis_request(ctx) -> tuple[str, list[str], dict]:
+    """작업 B: 상품 정보·사진 + 영상 격자·장면 목록으로 분석 요청서를 만든다."""
+    from app.assets.service import VIDEO_KINDS, asset_file
+    from app.core.models import Product, Project
+    from app.media.frames import labels
+    from app.media.scenes import segments_for
+    from app.projects.service import project_assets
+    from app.prompts import analysis
+
+    root = ctx.settings.storage_dir
+    with ctx.session_factory() as s:
+        project = s.get(Project, ctx.project_id)
+        product = s.get(Product, project.product_id)
+        assets = project_assets(s, ctx.project_id)
+        info = {
+            "상품명": product.name,
+            "카테고리": product.category,
+            "설명": product.description,
+            "가격": product.price,
+            "특징": product.features,
+            "구매 링크": product.purchase_url,
+        }
+        info = {k: v for k, v in info.items() if v}
+        attach: list[tuple[str, str]] = []
+        for n, a in enumerate([a for a in assets if a.kind == "product_photo"], 1):
+            path = asset_file(ctx.settings, a)
+            if path.suffix.lower() not in (".jpg", ".jpeg", ".png", ".webp"):
+                path = root / "assets" / str(a.id) / "thumb.jpg"
+            attach.append((f"상품 사진 {n}", str(path)))
+        videos = [a for a in assets if a.kind in VIDEO_KINDS]
+        segs = segments_for(s, [a.id for a in videos])
+        scenes = []
+        for v, a in enumerate(videos, 1):
+            for grid in sorted((root / "frames" / str(a.id)).glob("grid_*.jpg")):
+                attach.append((f"영상{v} 장면 격자 {grid.stem[-2:]}", str(grid)))
+            for sg in segs.get(a.id, []):
+                if sg.thumb_path:
+                    attach.append((f"[{sg.id}] 영상{v} 장면{sg.idx} 사진", str(root / sg.thumb_path)))
+                scenes.append(
+                    {
+                        "id": sg.id,
+                        "video": v,
+                        "idx": sg.idx,
+                        "start": sg.start,
+                        "end": sg.end,
+                        "warnings": labels(sg),
+                        "transcript_zh": sg.transcript_zh,
+                    }
+                )
+        prompt = analysis.build(info, product.detail_text or "", attach, scenes)
+    extra = {"valid_segment_ids": [sc["id"] for sc in scenes], "prompt_version": analysis.VERSION}
+    return prompt, [p for _, p in attach], extra
 
 
 def media_prep(ctx) -> dict:
