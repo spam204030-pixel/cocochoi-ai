@@ -1,5 +1,13 @@
 # 변경 기록
 
+## 2026-11-24 — 작업 0-4 FFmpeg 연결 확인
+
+- `app/media/probe.py`: FFmpeg·ffprobe 설치 확인(버전 표시), 영상·사진·음원 정보 읽기(종류, 길이, 가로·세로, fps, 소리 유무, 코덱, 파일 크기). 휴대폰 세로 영상의 회전 정보 반영
+- FFmpeg가 없으면 첫 화면에 윈도우 설치 방법(winget) 안내, `/api/health`에 FFmpeg 상태 표시
+- 오류 코드 2개 추가: FFMPEG_MISSING, MEDIA_UNREADABLE (한국어 안내)
+- `.env`에 FFMPEG_PATH·FFPROBE_PATH 선택 설정 추가 (자동으로 못 찾을 때만 사용)
+- 편집·렌더링 기능은 만들지 않음 (Phase 3)
+
 ## 2026-11-24 — 작업 0-3 DB 기반
 
 - SQLite DB `storage/cocochoi.db` + SQLAlchemy + Alembic. 프로그램을 켜면 DB를 만들고 최신 구조로 맞춤 (기존 데이터 유지)

@@ -31,12 +31,23 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
 
+    # FFmpeg 위치 (비워두면 컴퓨터에 설치된 것을 자동으로 찾음)
+    ffmpeg_path: str | None = None
+    ffprobe_path: str | None = None
+
     # 로그 수준 (DEBUG / INFO / WARNING / ERROR)
     log_level: str = "INFO"
 
     @field_validator("anthropic_api_key", mode="before")
     @classmethod
     def _empty_key_is_none(cls, value):
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        return value
+
+    @field_validator("ffmpeg_path", "ffprobe_path", mode="before")
+    @classmethod
+    def _empty_path_is_none(cls, value):
         if value is None or (isinstance(value, str) and not value.strip()):
             return None
         return value

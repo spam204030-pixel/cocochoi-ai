@@ -16,9 +16,10 @@ from app.core.db import Database
 from app.core.errors import ERRORS, AppError, ErrorCode, error_payload
 from app.core.logging import get_logger, setup_logging
 from app.core.settings import Settings, get_settings
+from app.media.probe import WINDOWS_INSTALL_GUIDE, check_ffmpeg
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.3"
+APP_VERSION = "0.0.4"
 
 TEMPLATES_DIR = Path(__file__).parent / "web" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -55,6 +56,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     db = Database(settings.db_path)
     db.init()  # DB 파일 생성 + 최신 구조로 맞춤 (기존 데이터 유지)
     app.state.db = db
+    ffmpeg = check_ffmpeg(settings.ffmpeg_path, settings.ffprobe_path)
+    app.state.ffmpeg = ffmpeg
     log = get_logger("web")
 
     def health_status() -> dict:
@@ -66,6 +69,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "checks": {
                 "storage": "정상" if settings.storage_writable() else "쓰기 불가",
                 "db": "정상" if db.is_ok() else "연결 실패",
+                "ffmpeg": ffmpeg.label,
                 "ai_key": "설정됨" if settings.ai_key_configured else "없음 (Phase 1부터 필요)",
             },
         }
@@ -76,7 +80,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse(request, "home.html", {"health": health_status()})
+        return templates.TemplateResponse(
+            request,
+            "home.html",
+            {"health": health_status(), "ffmpeg": ffmpeg, "ffmpeg_guide": WINDOWS_INSTALL_GUIDE},
+        )
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError):
@@ -107,6 +115,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     logger.info("프로그램 시작 — 버전 %s, 데이터 폴더 %s", APP_VERSION, settings.storage_dir)
+    if ffmpeg.installed:
+        logger.info("FFmpeg 확인 — 버전 %s (%s)", ffmpeg.version, ffmpeg.ffmpeg_path)
+    else:
+        logger.warning("FFmpeg를 찾을 수 없습니다. 영상 기능을 쓰려면 설치가 필요합니다.")
     return app
 
 

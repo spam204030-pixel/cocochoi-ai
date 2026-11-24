@@ -21,6 +21,8 @@ class ErrorCode(StrEnum):
     AI_UNAVAILABLE = "AI_UNAVAILABLE"
     AI_BAD_OUTPUT = "AI_BAD_OUTPUT"
     STORAGE_ERROR = "STORAGE_ERROR"
+    FFMPEG_MISSING = "FFMPEG_MISSING"
+    MEDIA_UNREADABLE = "MEDIA_UNREADABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
@@ -70,6 +72,16 @@ ERRORS: dict[ErrorCode, ErrorInfo] = {
         500,
         "파일을 저장하거나 읽는 중에 문제가 생겼습니다.",
         "컴퓨터 저장 공간과 storage 폴더를 확인해 주세요.",
+    ),
+    ErrorCode.FFMPEG_MISSING: ErrorInfo(
+        503,
+        "영상 처리 프로그램(FFmpeg)이 설치되어 있지 않습니다.",
+        "처음 화면의 설치 방법을 따라 FFmpeg를 설치한 뒤 프로그램을 다시 켜 주세요.",
+    ),
+    ErrorCode.MEDIA_UNREADABLE: ErrorInfo(
+        422,
+        "영상이나 사진 파일을 읽을 수 없습니다.",
+        "파일이 손상되지 않았는지 확인하고, mp4·mov·jpg·png 파일로 다시 올려 주세요.",
     ),
     ErrorCode.INTERNAL_ERROR: ErrorInfo(
         500,
