@@ -27,10 +27,11 @@ from app.projects.routes import api as projects_api
 from app.projects.routes import pages as projects_pages
 from app.providers.gateway import AIGateway
 from app.providers.registry import Registry
+from app.web.dashboard import board
 from app.web.templating import templates
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.9"
+APP_VERSION = "0.0.10"
 
 
 _HTTP_STATUS_TO_CODE = {
@@ -107,10 +108,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request) -> HTMLResponse:
+        with db.session_factory() as session:
+            data = board(session)
         return templates.TemplateResponse(
             request,
             "home.html",
-            {"health": health_status(), "ffmpeg": ffmpeg, "ffmpeg_guide": WINDOWS_INSTALL_GUIDE},
+            {
+                "health": health_status(),
+                "ffmpeg": ffmpeg,
+                "ffmpeg_guide": WINDOWS_INSTALL_GUIDE,
+                "board": data,
+            },
         )
 
     app.include_router(products_api)
