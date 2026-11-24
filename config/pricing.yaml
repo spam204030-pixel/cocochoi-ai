@@ -1,0 +1,14 @@
+# AI 사용 단가표 (원 단위) — 예상 비용·실제 비용 계산에 쓴다.
+# 가격은 공급자 사정으로 바뀌므로 코드에 넣지 않는다. 실제 공급자를 연결할 때(Phase 1)
+# 각 회사 가격 페이지를 보고 이 파일을 직접 고친다. 고친 날짜를 checked 에 적는다.
+
+llm:   # 100만 토큰당 원
+  fake:
+    fake-cheap:    {input: 0, output: 0}
+    fake-standard: {input: 0, output: 0}
+    fake-premium:  {input: 0, output: 0}
+
+tts:   # 1,000글자당 원
+  fake: {per_1k_chars: 0}
+
+checked: "2026-11-24 (시험용 단가만 있음)"

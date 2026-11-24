@@ -24,6 +24,7 @@ def tmp_settings(tmp_path):
         anthropic_api_key=None,
         worker_enabled=False,  # 테스트는 작업자를 직접 실행
         fake_step_seconds=0,
+        ai_retry_backoff=0,
     )
 
 

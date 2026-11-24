@@ -1,0 +1,27 @@
+# AI 공급자 설정 — 어떤 AI 호출에 어느 회사·모델을 쓸지 정한다 (설계서 2-2 모델 등급 전략)
+# 코드를 고치지 않고 이 파일만 바꿔서 공급자를 교체한다.
+# Phase 0: 모든 호출이 시험용 가짜(fake) 공급자. 실제 공급자는 Phase 1에서 연결한다.
+
+# 모델 등급: 저가(cheap) / 표준(standard) / 고성능(premium)
+tiers:
+  cheap:    {provider: fake, model: fake-cheap}
+  standard: {provider: fake, model: fake-standard}
+  premium:  {provider: fake, model: fake-premium}
+
+# AI 호출별 등급 (PROMPTS.md 호출 이름)
+calls:
+  A:  cheap       # 장면·사진 태깅
+  B:  standard    # 상품 분석
+  C:  premium     # 구매전환 전략 + 기획 5안
+  D:  premium     # 판매 대본 + 장면 배치
+  E:  standard    # 사실·전략 검토
+  F:  premium     # 품질 채점
+  G1: standard    # 플랫폼 공통 콘텐츠 정보
+  G2: cheap       # 플랫폼별 변환
+  G2_blog: standard  # 네이버 블로그 변환
+  H:  cheap       # 검색 조사 요약
+
+# AI 외 공급자
+tts:    {provider: fake, voice: fake-voice}   # 나레이션 음성
+stt:    {provider: fake, model: fake}         # 음성 받아쓰기 (Phase 1: faster-whisper 로컬, 무료)
+search: {provider: fake}                      # 검색 조사 (Phase 5)

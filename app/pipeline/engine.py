@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, ErrorCode
 from app.core.logging import get_logger
-from app.core.models import Job, Project, RoleRun, utcnow
+from app.core.models import Job, Project, RoleRun, UsageLog, utcnow
 from app.pipeline.steps import PROJECT_STATUS, STEP_KEYS
 
 log = get_logger("pipeline")
@@ -197,7 +197,15 @@ def pipeline_state(session: Session, project_id: int) -> dict:
             }
         )
     job = active_job(session, project_id)
+    cost = (
+        session.scalar(select(func.sum(UsageLog.actual_cost)).where(UsageLog.project_id == project_id)) or 0
+    )
+    calls = session.scalar(
+        select(func.count()).select_from(UsageLog).where(UsageLog.project_id == project_id)
+    )
     return {
+        "ai_cost": round(float(cost), 2),
+        "ai_calls": calls,
         "project_id": project_id,
         "status": project.status,
         "status_label": PROJECT_STATUS[project.status][0],

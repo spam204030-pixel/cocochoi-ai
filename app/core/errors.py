@@ -30,6 +30,8 @@ class ErrorCode(StrEnum):
     PROJECT_LOCKED = "PROJECT_LOCKED"
     PROJECT_ALREADY_RUNNING = "PROJECT_ALREADY_RUNNING"
     INVALID_ACTION = "INVALID_ACTION"
+    PROVIDER_NOT_CONFIGURED = "PROVIDER_NOT_CONFIGURED"
+    BUDGET_EXCEEDED = "BUDGET_EXCEEDED"
     FFMPEG_MISSING = "FFMPEG_MISSING"
     MEDIA_UNREADABLE = "MEDIA_UNREADABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
@@ -116,6 +118,16 @@ ERRORS: dict[ErrorCode, ErrorInfo] = {
     ),
     ErrorCode.INVALID_ACTION: ErrorInfo(
         409, "지금 상태에서는 할 수 없는 동작입니다.", "화면을 새로고침해서 현재 상태를 확인해 주세요."
+    ),
+    ErrorCode.PROVIDER_NOT_CONFIGURED: ErrorInfo(
+        500,
+        "AI 공급자 설정이 잘못되어 있습니다.",
+        "config/providers.yaml 의 공급자 이름과 단가표(config/pricing.yaml)를 확인해 주세요.",
+    ),
+    ErrorCode.BUDGET_EXCEEDED: ErrorInfo(
+        402,
+        "이 콘텐츠의 AI 예산 상한을 넘을 것 같아 멈췄습니다.",
+        "콘텐츠 설정에서 예산 상한을 늘리거나, 확인 후 다시 실행해 주세요.",
     ),
     ErrorCode.FFMPEG_MISSING: ErrorInfo(
         503,

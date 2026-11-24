@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     fake_step_seconds: float = 1.5
     fake_fail_step: str | None = None
 
+    # AI 공급자·단가 설정 파일, 일시적 오류 재시도 간격(초)
+    providers_file: Path = PROJECT_ROOT / "config" / "providers.yaml"
+    pricing_file: Path = PROJECT_ROOT / "config" / "pricing.yaml"
+    ai_retry_backoff: float = 2.0
+
     # 로그 수준 (DEBUG / INFO / WARNING / ERROR)
     log_level: str = "INFO"
 

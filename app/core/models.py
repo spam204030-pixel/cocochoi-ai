@@ -146,3 +146,25 @@ class RoleRun(Base):
     error_code: Mapped[str | None] = mapped_column(String(40))
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class UsageLog(Base):
+    """AI·음성 사용량과 비용 기록 (호출 1번 = 1줄). 비용 보고 화면의 원자료."""
+
+    __tablename__ = "usage_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"), index=True)
+    role_key: Mapped[str | None] = mapped_column(String(40))  # 단계
+    call_key: Mapped[str | None] = mapped_column(String(10))  # A~H, tts, stt
+    provider: Mapped[str] = mapped_column(String(40), nullable=False)
+    model: Mapped[str | None] = mapped_column(String(100))
+    unit: Mapped[str] = mapped_column(String(20), nullable=False)  # tokens / chars / seconds
+    input_units: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    output_units: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    est_cost: Mapped[float | None] = mapped_column(Float)  # 원 (호출 전 예상)
+    actual_cost: Mapped[float] = mapped_column(Float, default=0, nullable=False)  # 원
+    attempt: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    ok: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

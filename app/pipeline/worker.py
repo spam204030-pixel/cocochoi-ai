@@ -29,12 +29,14 @@ class StepContext:
     run: RoleRun
     settings: Settings
     should_stop: Callable[[], bool]
+    ai: object | None = None  # AIGateway
 
 
 class Worker:
-    def __init__(self, session_factory, settings: Settings) -> None:
+    def __init__(self, session_factory, settings: Settings, ai=None) -> None:
         self.session_factory = session_factory
         self.settings = settings
+        self.ai = ai
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -76,12 +78,12 @@ class Worker:
                     run.status = "cancelled"
                 s.commit()
                 return True
-            run.status, run.started_at, run.provider = "running", utcnow(), "fake"
+            run.status, run.started_at = "running", utcnow()
             s.commit()
             step, pid = job.step_key, job.project_id
 
         log.info("단계 시작 #%s %s (v%s)", pid, STEP_NAMES.get(step, step), run.version)
-        ctx = StepContext(pid, step, run, self.settings, lambda: self._is_cancelled(pid))
+        ctx = StepContext(pid, step, run, self.settings, lambda: self._is_cancelled(pid), self.ai)
         try:
             output = HANDLERS[step](ctx)
         except StepCancelled:
@@ -107,7 +109,10 @@ class Worker:
             job.finished_at = now
             if status == "succeeded":
                 job.status = "done"
-                run.output_json, run.actual_cost = output, 0
+                run.output_json = output
+                run.provider, run.model = (output or {}).get("provider"), (output or {}).get("model")
+                run.call_key = (output or {}).get("call")
+                run.actual_cost = (output or {}).get("cost", 0)
             elif status == "cancelled":
                 job.status = "cancelled"
             else:

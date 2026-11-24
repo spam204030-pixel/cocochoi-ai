@@ -25,10 +25,12 @@ from app.products.routes import api as products_api
 from app.products.routes import pages as products_pages
 from app.projects.routes import api as projects_api
 from app.projects.routes import pages as projects_pages
+from app.providers.gateway import AIGateway
+from app.providers.registry import Registry
 from app.web.templating import templates
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.8"
+APP_VERSION = "0.0.9"
 
 
 _HTTP_STATUS_TO_CODE = {
@@ -60,7 +62,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     db = Database(settings.db_path)
     db.init()  # DB 파일 생성 + 최신 구조로 맞춤 (기존 데이터 유지)
-    worker = Worker(db.session_factory, settings)
+    registry = Registry(settings.providers_file, settings.pricing_file)
+    ai = AIGateway(registry, db.session_factory, settings.ai_retry_backoff)
+    worker = Worker(db.session_factory, settings, ai)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -74,6 +78,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.db = db
     app.state.worker = worker
+    app.state.registry = registry
+    app.state.ai = ai
     ffmpeg = check_ffmpeg(settings.ffmpeg_path, settings.ffprobe_path)
     app.state.ffmpeg = ffmpeg
     log = get_logger("web")
@@ -89,6 +95,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "db": "정상" if db.is_ok() else "연결 실패",
                 "ffmpeg": ffmpeg.label,
                 "ai_key": "설정됨" if settings.ai_key_configured else "없음 (Phase 1부터 필요)",
+                "ai_provider": "시험용 가짜 공급자 (비용 0원)"
+                if registry.all_fake()
+                else "실제 공급자 연결됨",
             },
         }
 

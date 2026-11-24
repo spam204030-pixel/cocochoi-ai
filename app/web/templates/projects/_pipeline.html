@@ -8,7 +8,7 @@
 <div class="card" id="pipeline">
   <div class="row" style="justify-content:space-between">
     <h2 style="font-size:18px;margin:0">제작 진행 <span class="muted" style="font-size:14px">· {{ pipe.status_label }} · {{ pipe.done_count }}/{{ pipe.steps|length }}단계 완료</span></h2>
-    <span class="muted" style="font-size:13px">현재는 시험 실행(가짜 작업)만 가능 · AI 비용 0원</span>
+    <span class="muted" style="font-size:13px">현재는 시험 실행(가짜 작업)만 가능 · AI 사용 {{ pipe.ai_calls }}회 · 비용 {{ "{:,.0f}".format(pipe.ai_cost) }}원</span>
   </div>
   {% if msg and msg in MSG %}<div class="notice {{ MSG[msg][0] }}" style="margin-top:12px">{{ MSG[msg][1] }}</div>{% endif %}
 
