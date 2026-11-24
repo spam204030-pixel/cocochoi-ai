@@ -15,13 +15,17 @@
 제품과 영상·사진 소재를 넣으면 판매 숏폼 영상과 플랫폼 게시물을 만드는 프로그램입니다.
 설계서: `docs/DESIGN.md` · 변경 기록: `docs/CHANGELOG.md`
 
-## 처음 한 번만 (윈도우)
-1. PowerShell을 열고 uv 설치:
-   `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
-2. PowerShell을 닫았다가 다시 열기
-3. 이 폴더로 이동: `cd 내려받은-폴더-경로\cocochoi-ai`
+## 설치와 실행 (윈도우)
+자세한 순서와 확인 체크리스트: **`docs/WINDOWS_CHECK.md`**
 
-## 실행
-- 프로그램 켜기: `uv run factory` → 브라우저에서 http://localhost:8000
-- 끄기: PowerShell에서 `Ctrl + C`
-- 테스트: `uv run pytest`
+요약
+1. uv 설치(처음 한 번): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+2. FFmpeg 설치(처음 한 번): `winget install Gyan.FFmpeg`
+3. PowerShell을 다시 열고 프로그램 폴더에서 `uv run factory` → 브라우저에서 http://localhost:8000
+4. 끄기: `Ctrl + C` / 테스트: `uv run pytest`
+
+## 지금 되는 것 (Phase 0, 버전 0.0)
+- 현황판(신규·제작 중·검수 대기·완료), 제품 등록·수정, 사진·영상 업로드(썸네일·길이·해상도 자동 기록, 출처 메모)
+- 콘텐츠 만들기(소재 선택, 길이·스타일·나레이션·플랫폼·광고 표기 설정)
+- 시험 실행: 8단계 진행·일시정지·재개·취소·다시 실행, 껐다 켜도 이어서 진행 (가짜 작업, AI 비용 0원)
+- 실제 AI 분석·영상 제작은 Phase 1부터 단계별로 연결

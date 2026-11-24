@@ -31,7 +31,7 @@ from app.web.dashboard import board
 from app.web.templating import templates
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.10"
+APP_VERSION = "0.0"
 
 
 _HTTP_STATUS_TO_CODE = {
@@ -171,8 +171,15 @@ app = create_app()
 
 def run() -> None:
     """`uv run factory` 명령으로 서버를 켠다."""
+    import sys
+
     import uvicorn
 
+    for stream in (sys.stdout, sys.stderr):  # 윈도우 PowerShell에서 한글 안내가 깨지지 않게
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     settings = get_settings()
     print(
         f"\n  {APP_NAME} 실행 중 → 브라우저에서 http://localhost:{settings.port} 을 여세요 (끄기: Ctrl + C)\n"
