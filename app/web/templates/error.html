@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>문제가 생겼습니다 · {{ app_name }}</title>
+  <style>
+    body { font-family: "Pretendard", "Malgun Gothic", sans-serif; margin: 0; background: #faf8f5; color: #222; }
+    main { max-width: 640px; margin: 80px auto; padding: 0 24px; }
+    .box { border: 1px solid #f0b4b4; background: #fdf0f0; border-radius: 10px; padding: 20px 24px; }
+    h1 { font-size: 20px; margin: 0 0 8px; color: #a12828; }
+    p { line-height: 1.6; margin: 8px 0; }
+    .action { font-weight: 600; }
+    details { margin-top: 16px; color: #777; font-size: 14px; }
+    a.home { display: inline-block; margin-top: 24px; color: #222; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="box">
+      <h1>⚠ {{ error.message }}</h1>
+      <p class="action">{{ error.action }}</p>
+      {% if error.error_id %}<p>오류 번호: <strong>{{ error.error_id }}</strong></p>{% endif %}
+      <details>
+        <summary>자세히</summary>
+        <p>오류 종류: {{ error.code }}</p>
+        {% if error.detail %}<p>{{ error.detail }}</p>{% endif %}
+      </details>
+    </div>
+    <a class="home" href="/">← 처음 화면으로</a>
+  </main>
+</body>
+</html>

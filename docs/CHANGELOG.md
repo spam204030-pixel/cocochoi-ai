@@ -1,5 +1,21 @@
 # 변경 기록
 
+## 2026-11-24 — 작업 0-2 설정·오류·로그
+
+**만든 것**
+- `app/core/settings.py`: `.env` 읽기(API 키, 데이터 폴더, 서버 주소·포트, 로그 수준), 빈 값은 기본값 사용, `storage/`·`storage/logs/` 자동 생성, 쓰기 가능 여부 검사. API 키는 화면·로그에 "설정됨 / 없음"만 표시
+- `app/core/errors.py`: 오류 코드 12종과 한국어 안내 문구·해결 방법을 한 곳에 모음. 모든 오류 응답 형식 통일 (`code`, `message`, `action`, `detail`, `error_id`)
+- `app/core/logging.py`: `storage/logs/factory.log`에 기록 (UTF-8, 5MB마다 새 파일, 최근 5개 보관), API 키처럼 보이는 문자열은 자동으로 가림
+- 오류 화면 `error.html`: 화면 주소는 한국어 안내 화면, `/api/` 주소는 JSON. 예상하지 못한 오류는 원인을 화면에 보이지 않고 오류 번호만 보여주며, 원인은 로그에 남김
+- `/api/health`에 데이터 폴더 상태와 AI 키 설정 여부 추가
+
+**0-1 파일 수정**
+- `app/main.py`: 오류 처리·로그를 연결하기 위해 `create_app()` 구조로 변경. 상태 확인과 첫 화면 동작은 그대로
+- `tests/test_health.py`: 실제 `storage/`를 건드리지 않도록 임시 폴더를 쓰는 테스트 방식으로 변경
+
+**선택 설정 (`.env`에 넣을 수 있는 값, 넣지 않으면 기본값)**
+- `HOST` (기본 127.0.0.1), `PORT` (기본 8000), `LOG_LEVEL` (기본 INFO), `STORAGE_DIR` (기본 storage/)
+
 ## 2026-11-24 — 작업 0-1 프로젝트 뼈대 + 테스트 환경
 
 **만든 것**
