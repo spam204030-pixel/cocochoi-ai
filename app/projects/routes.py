@@ -163,6 +163,17 @@ async def page_create(request: Request, session: Session = Depends(get_session))
 @pages.get("/{project_id}", response_class=HTMLResponse)
 def page_detail(request: Request, project_id: int, session: Session = Depends(get_session)):
     project = service.get_project(session, project_id)
+    pipe = pipeline_state(session, project_id)
+    analysis = next(
+        (
+            st["output"].get("result")
+            for st in pipe["steps"]
+            if st["key"] == "analysis" and st["status"] == "succeeded" and st["output"]
+        ),
+        None,
+    )
+    if analysis and "identity" not in analysis:  # 시험 실행 결과는 표시하지 않음
+        analysis = None
     return templates.TemplateResponse(
         request,
         "projects/detail.html",
@@ -172,7 +183,9 @@ def page_detail(request: Request, project_id: int, session: Session = Depends(ge
             "assets": service.project_assets(session, project_id),
             "saved": request.query_params.get("saved"),
             "msg": request.query_params.get("msg"),
-            "pipe": pipeline_state(session, project_id),
+            "pipe": pipe,
+            "analysis": analysis,
+            "scene_info": {sc["segment_id"]: sc for sc in (analysis or {}).get("scenes", [])},
             "seg_labels": seg_labels,
             "segments": segments_for(session, [a.id for a in service.project_assets(session, project_id)]),
             **CHOICES,

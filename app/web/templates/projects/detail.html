@@ -8,6 +8,7 @@
   {% if project.status == "ready" %}<a class="btn light" href="/projects/{{ project.id }}/edit">설정 수정</a>{% endif %}
 </div>
 {% include "projects/_pipeline.html" %}
+{% if analysis %}{% include "projects/_analysis.html" %}{% endif %}
 <div class="card">
   <p><strong>제품</strong> · <a href="/products/{{ product.id }}">{{ product.name }}</a></p>
   <p><strong>영상 길이</strong> · {{ project.target_length }}초</p>
@@ -36,6 +37,11 @@
       {% if sg.thumb_path %}<img src="/media/segments/{{ sg.id }}/thumb" alt="" loading="lazy" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block">{% endif %}
       <div style="padding:4px 6px"><strong>{{ sg.idx }}</strong> <span class="muted">{{ "%.1f"|format(sg.start) }}–{{ "%.1f"|format(sg.end) }}초</span>
         {% for l in seg_labels(sg) %} <span style="color:#a12828">{{ l }}</span>{% endfor %}
+        {% set si = scene_info.get(sg.id) %}
+        {% if si %}<div style="margin-top:3px;line-height:1.4"><strong>{{ si.content }}</strong>
+          {% if si.visible_facts %}<br>👁 {{ si.visible_facts|join(", ") }}{% endif %}
+          {% if si.inferred %}<br><span class="muted">추정: {{ si.inferred|join(", ") }}</span>{% endif %}
+          {% if not si.usable %}<br><span style="color:#a12828">사용 비추천</span>{% endif %}</div>{% endif %}
         {% if sg.transcript_zh %}<div class="muted" style="margin-top:2px;line-height:1.4">🎙 {{ sg.transcript_zh }}</div>{% endif %}</div>
     </div>
     {% endfor %}

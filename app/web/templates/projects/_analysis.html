@@ -1,0 +1,30 @@
+{# 작업 C: 상품·소비자 분석 결과 (근거 표시: 입력 / 화면 / 추정) #}
+{% set SRC = {"user_input": ("입력", "#1e6b34"), "visible": ("화면", "#1d4ed8"), "inferred": ("추정", "#8a6100")} %}
+{% macro src(s) %}<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#f3f1ee;color:{{ SRC[s][1] }}">{{ SRC[s][0] }}</span>{% endmacro %}
+<div class="card" id="analysis">
+  <h2 style="font-size:18px;margin:0 0 6px">상품·소비자 분석</h2>
+  <p style="margin:0 0 12px"><strong>{{ analysis.identity }}</strong></p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;font-size:14px;line-height:1.6">
+    <div>
+      <h3 style="font-size:15px;margin:0 0 4px">구매 포인트</h3>
+      {% for p in analysis.purchase_points %}<div>• {{ p.point }} {{ src(p.source) }}<br><span class="muted">{{ p.situation }}{% if p.segment_ids %} · 장면 {{ p.segment_ids|join(", ") }}{% endif %}</span></div>{% endfor %}
+      <h3 style="font-size:15px;margin:12px 0 4px">구매 이유</h3>
+      {% for r in analysis.buy_reasons %}<div>• {{ r }}</div>{% endfor %}
+    </div>
+    <div>
+      <h3 style="font-size:15px;margin:0 0 4px">구매 고민 → 답</h3>
+      {% for w in analysis.worries %}<div>• {{ w.worry }} → {{ w.answer }} {{ src(w.source) }}</div>{% else %}<div class="muted">없음</div>{% endfor %}
+      <h3 style="font-size:15px;margin:12px 0 4px">타깃</h3>
+      {% for t in analysis.targets %}<div>• {{ t.situation }} ({{ t.persona }}, 가능성 {{ t.likelihood }})</div>{% endfor %}
+    </div>
+    <div>
+      <h3 style="font-size:15px;margin:0 0 4px">특징</h3>
+      {% for f in analysis.features %}<div>• {{ f.text }} {{ src(f.source) }}</div>{% else %}<div class="muted">없음</div>{% endfor %}
+      {% if analysis.differentiators %}<h3 style="font-size:15px;margin:12px 0 4px">차별점</h3>
+      {% for f in analysis.differentiators %}<div>• {{ f.text }} {{ src(f.source) }}</div>{% endfor %}{% endif %}
+    </div>
+  </div>
+  {% if analysis.needs_confirmation %}<div class="notice" style="background:#fff8e1;color:#8a6100;margin-top:14px"><strong>대표님 확인 필요</strong>{% for q in analysis.needs_confirmation %}<br>• {{ q }}{% endfor %}</div>{% endif %}
+  {% if analysis.banned_claims %}<p class="muted" style="font-size:13px;margin:10px 0 0">쓰면 안 되는 표현: {{ analysis.banned_claims|join(" · ") }}</p>{% endif %}
+  <p class="muted" style="font-size:13px;margin:6px 0 0">장면별 분석은 아래 "사용할 소재"의 장면 사진 밑에 있습니다.</p>
+</div>

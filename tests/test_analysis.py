@@ -133,3 +133,21 @@ def test_good_analysis_is_saved(env):
     with app.state.db.session_factory() as s:
         step = engine.pipeline_state(s, proj)["steps"][1]
     assert step["status"] == "succeeded" and step["output"]["result"]["identity"] == "충전식 발열양말"
+
+
+def test_analysis_shown_on_detail_page(env):
+    app, worker, proj, bridge, req = env
+    respond(bridge, req, good(req["valid_segment_ids"]))
+    worker.poll_bridge()
+    page = TestClient(app).get(f"/projects/{proj}").text
+    for text in (
+        "상품·소비자 분석",
+        "충전식 발열양말",
+        "발이 덜 시려요",
+        "두꺼울까",
+        "소재는?",
+        "👁 무릎까지 옴",
+        "혈액순환 개선",
+    ):
+        assert text in page
+    assert "입력</span>" in page and "추정</span>" in page
