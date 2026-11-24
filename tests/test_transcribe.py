@@ -66,7 +66,7 @@ def test_choose_model():
 
 
 def test_model_download_failure_is_korean_error(monkeypatch, tmp_path):
-    import faster_whisper
+    faster_whisper = pytest.importorskip("faster_whisper")  # 선택 설치 (uv sync --extra transcribe)
 
     from app.core.errors import AppError
     from app.media import transcribe

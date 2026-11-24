@@ -29,7 +29,13 @@ def choose_model(setting: str) -> str:
 
 
 def whisper_transcribe(path: Path, model_name: str) -> list[Line]:
-    from faster_whisper import WhisperModel
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError as exc:
+        raise AppError(
+            ErrorCode.AI_UNAVAILABLE,
+            "받아쓰기 부품이 설치되지 않았습니다. 터미널에서 uv sync --extra transcribe 를 실행하세요.",
+        ) from exc
 
     if model_name not in _models:  # 처음 한 번 모델을 내려받고 불러온다
         log.info("받아쓰기 모델 준비: %s", model_name)

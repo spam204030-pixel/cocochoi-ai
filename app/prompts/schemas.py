@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ValidationInfo, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 Source = Literal["user_input", "visible", "inferred"]  # 입력 정보 / 화면에 보임 / AI 추정
 
@@ -82,3 +82,34 @@ class AnalysisResult(BaseModel):
         if not self.purchase_points or not self.targets:
             raise ValueError("purchase_points 와 targets 는 1개 이상 필요")
         return self
+
+
+# ---------- 스킬 /기획: 기획·대본 (대본.json) ----------
+
+
+class Plan(BaseModel):
+    title: str
+    story: str  # 상황 → 고민 → 발견 → 증거 → 행동
+    hook: str
+    score: int  # 100점
+    reason: str
+
+
+class ScriptLine(BaseModel):
+    no: int
+    role: Literal["hook", "empathy", "proof", "solution", "cta"]
+    narration: str = Field(min_length=1)
+    subtitle: str = Field(min_length=1)
+    scene_ids: list[int] = Field(min_length=1)  # 장면.json 의 id
+    proof: str = Field(min_length=1)  # 그 장면에서 보이는 것
+    edit_note: str = ""
+
+    _ids = field_validator("scene_ids")(_check_ids)
+
+
+class ScriptResult(BaseModel):
+    hooks: list[str] = Field(min_length=5, max_length=5)
+    plans: list[Plan] = Field(min_length=2)
+    selected: int  # plans 의 번호 (1부터)
+    selected_reason: str
+    lines: list[ScriptLine] = Field(min_length=3)

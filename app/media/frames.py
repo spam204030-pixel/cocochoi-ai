@@ -74,13 +74,21 @@ def labels(seg: FootageSegment) -> list[str]:
 
 def measure_segments(session: Session, asset: Asset, video: Path, storage_dir: Path) -> int:
     """측정 안 된 장면만 처리한다. 처리한 장면 수를 돌려준다."""
-    cv2 = _cv2()
     segs = session.scalars(
         select(FootageSegment).where(FootageSegment.asset_id == asset.id).order_by(FootageSegment.idx)
     ).all()
     todo = [s for s in segs if s.quality is None]
     if not todo:
         return 0
+    measure_list(todo, video, storage_dir, Path("frames") / str(asset.id))
+    session.flush()
+    make_grids(segs, storage_dir / "frames" / str(asset.id), storage_dir)
+    return len(todo)
+
+
+def measure_list(todo: list[FootageSegment], video: Path, root: Path, folder: Path) -> None:
+    """장면 목록(DB 저장 여부와 무관)을 측정하고 대표 사진을 root/folder 에 저장한다."""
+    cv2 = _cv2()
     cap = cv2.VideoCapture(str(video))
     if not cap.isOpened():
         raise AppError(ErrorCode.MEDIA_UNREADABLE, f"영상을 열 수 없음: {video.name}")
@@ -102,14 +110,11 @@ def measure_segments(session: Session, asset: Asset, video: Path, storage_dir: P
             seg.brightness = round(float(gray.mean()), 1)
             seg.shake = round(shake, 1)
             seg.quality = score(seg.sharpness, seg.shake, seg.brightness)
-            rel = Path("frames") / str(asset.id) / f"seg_{seg.idx:03d}.jpg"
-            _write_jpg(storage_dir / rel, small)
+            rel = folder / f"seg_{seg.idx:03d}.jpg"
+            _write_jpg(root / rel, small)
             seg.thumb_path = rel.as_posix()
     finally:
         cap.release()
-    session.flush()
-    make_grids(segs, storage_dir / "frames" / str(asset.id), storage_dir)
-    return len(todo)
 
 
 def make_grids(segs: list[FootageSegment], out_dir: Path, storage_dir: Path) -> list[Path]:
