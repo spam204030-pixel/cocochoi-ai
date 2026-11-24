@@ -1,5 +1,17 @@
 .env
 .env.*
+!.env.example
 node_modules/
 __pycache__/
 .DS_Store
+
+# 콘텐츠 공장 프로그램
+.venv/
+storage/
+*.db
+.pytest_cache/
+.ruff_cache/
+*.mp4
+*.mov
+*.wav
+*.mp3

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ health.app }}</title>
+  <style>
+    body { font-family: "Pretendard", "Malgun Gothic", sans-serif; margin: 0; background: #faf8f5; color: #222; }
+    main { max-width: 640px; margin: 80px auto; padding: 0 24px; }
+    h1 { font-size: 22px; letter-spacing: 0.02em; }
+    .status { display: inline-block; margin-top: 16px; padding: 10px 18px; border-radius: 8px;
+              background: #e6f4ea; color: #1e6b34; font-weight: 600; font-size: 18px; }
+    p { color: #666; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>{{ health.app }}</h1>
+    <div class="status">✅ {{ health.message }}</div>
+    <p>버전 {{ health.version }} · 프로그램이 제대로 켜졌습니다.<br>
+       다음 작업에서 제품 등록과 업로드 화면이 이 자리에 생깁니다.</p>
+  </main>
+</body>
+</html>

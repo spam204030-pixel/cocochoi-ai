@@ -7,3 +7,21 @@
 4. 발행한 콘텐츠 숫자는 `data/performance.csv`에 기록
 
 규칙은 `CLAUDE.md`, 사업 방향은 `docs/BUSINESS.md`
+
+---
+
+# COCOCHOI AI CONTENT FACTORY (개발 중)
+
+제품과 영상·사진 소재를 넣으면 판매 숏폼 영상과 플랫폼 게시물을 만드는 프로그램입니다.
+설계서: `docs/DESIGN.md` · 변경 기록: `docs/CHANGELOG.md`
+
+## 처음 한 번만 (윈도우)
+1. PowerShell을 열고 uv 설치:
+   `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+2. PowerShell을 닫았다가 다시 열기
+3. 이 폴더로 이동: `cd 내려받은-폴더-경로\cocochoi-ai`
+
+## 실행
+- 프로그램 켜기: `uv run factory` → 브라우저에서 http://localhost:8000
+- 끄기: PowerShell에서 `Ctrl + C`
+- 테스트: `uv run pytest`
