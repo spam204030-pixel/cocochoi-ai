@@ -35,7 +35,8 @@
     <div style="border:1px solid #eee;border-radius:8px;overflow:hidden;background:#fff;font-size:12px">
       {% if sg.thumb_path %}<img src="/media/segments/{{ sg.id }}/thumb" alt="" loading="lazy" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block">{% endif %}
       <div style="padding:4px 6px"><strong>{{ sg.idx }}</strong> <span class="muted">{{ "%.1f"|format(sg.start) }}–{{ "%.1f"|format(sg.end) }}초</span>
-        {% if sg.quality is not none %}<br>화질 {{ sg.quality }}{% for l in seg_labels(sg) %} <span style="color:#a12828">{{ l }}</span>{% endfor %}{% endif %}</div>
+        {% for l in seg_labels(sg) %} <span style="color:#a12828">{{ l }}</span>{% endfor %}
+        {% if sg.transcript_zh %}<div class="muted" style="margin-top:2px;line-height:1.4">🎙 {{ sg.transcript_zh }}</div>{% endif %}</div>
     </div>
     {% endfor %}
   </div>

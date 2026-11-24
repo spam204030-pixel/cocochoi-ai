@@ -83,9 +83,10 @@ def media_prep(ctx) -> dict:
     from app.assets.service import VIDEO_KINDS, asset_file
     from app.media.frames import measure_segments
     from app.media.scenes import segment_asset
+    from app.media.transcribe import transcribe_asset
     from app.projects.service import project_assets
 
-    counts = {}
+    counts, lines = {}, {}
     with ctx.session_factory() as s:
         videos = [a for a in project_assets(s, ctx.project_id) if a.kind in VIDEO_KINDS]
         for asset in videos:
@@ -95,7 +96,17 @@ def media_prep(ctx) -> dict:
             counts[str(asset.id)] = segment_asset(s, asset, path)
             measure_segments(s, asset, path, ctx.settings.storage_dir)
             s.commit()
-    return {"message": f"영상 {len(videos)}개 장면 나누기·화질 측정 완료", "segments": counts}
+            if ctx.should_stop():
+                raise StepCancelled
+            lines[str(asset.id)] = transcribe_asset(
+                s, asset, path, ctx.settings.storage_dir, ctx.settings.whisper_model
+            )
+            s.commit()
+    return {
+        "message": f"영상 {len(videos)}개 장면 나누기·사진·받아쓰기 완료",
+        "segments": counts,
+        "transcript_lines": lines,
+    }
 
 
 HANDLERS = {key: (ai_step if key in AI_STEPS else fake_step) for key in STEP_KEYS}

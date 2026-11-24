@@ -208,4 +208,5 @@ class FootageSegment(Base):
     shake: Mapped[float | None] = mapped_column(Float)  # 연속 프레임 화면 변화량 (클수록 흔들림)
     brightness: Mapped[float | None] = mapped_column(Float)  # 평균 밝기 0~255
     quality: Mapped[int | None] = mapped_column(Integer)  # 화질 점수 0~100
+    transcript_zh: Mapped[str | None] = mapped_column(Text)  # 작업 A: 이 장면의 원본 대사 (중국어 받아쓰기)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     fake_fail_step: str | None = None
     # AI 연결 방식: claude_code(구독 + /공장, 실제 사용) | fake(시험용)
     ai_mode: str = "claude_code"
+    # 받아쓰기 모델: auto(메모리 8GB 이상 small, 미만 base) | tiny | base | small | medium | off
+    whisper_model: str = "auto"
 
     # AI 공급자·단가 설정 파일, 일시적 오류 재시도 간격(초)
     providers_file: Path = PROJECT_ROOT / "config" / "providers.yaml"
