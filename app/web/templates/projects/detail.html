@@ -28,5 +28,9 @@
     </div>
     {% endfor %}
   </div>
+  {% for a in assets if segments.get(a.id) %}
+  <div style="margin-top:12px;font-size:13px"><strong>영상 {{ loop.index }} 장면 {{ segments[a.id]|length }}개</strong>
+    <span class="muted">{% for sg in segments[a.id] %}{{ sg.idx }}) {{ "%.1f"|format(sg.start) }}–{{ "%.1f"|format(sg.end) }}초{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+  {% endfor %}
 </div>
 {% endblock %}

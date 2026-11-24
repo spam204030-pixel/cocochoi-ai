@@ -62,7 +62,8 @@ def test_full_run_completes_all_steps_in_order(ctx):
     assert order == STEP_KEYS
     s = state(db, pid)
     assert s["status"] == "waiting_user" and s["board_status"] == "검수 대기" and s["done_count"] == 7
-    assert s["steps"][0]["output"]["fake"] is True
+    assert s["steps"][0]["output"]["segments"] == {}  # 소재 준비: 영상 없음
+    assert s["steps"][1]["output"]["fake"] is True
 
 
 def test_duplicate_start_is_blocked(ctx):

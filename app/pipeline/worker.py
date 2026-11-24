@@ -33,6 +33,7 @@ class StepContext:
     ai: object | None = None  # AIGateway
     bridge: ClaudeCodeBridge | None = None
     job_id: int | None = None
+    session_factory: object | None = None
 
 
 class Worker:
@@ -89,7 +90,15 @@ class Worker:
 
         log.info("단계 시작 #%s %s (v%s)", pid, STEP_NAMES.get(step, step), run.version)
         ctx = StepContext(
-            pid, step, run, self.settings, lambda: self._is_cancelled(pid), self.ai, self.bridge, job_id
+            pid,
+            step,
+            run,
+            self.settings,
+            lambda: self._is_cancelled(pid),
+            self.ai,
+            self.bridge,
+            job_id,
+            self.session_factory,
         )
         try:
             output = HANDLERS[step](ctx)

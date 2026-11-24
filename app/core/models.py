@@ -189,3 +189,17 @@ class BridgeRequest(Base):
     retry_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class FootageSegment(Base):
+    """영상 장면 (설계서 V4-7, 작업 1-2). 시간은 코드가 영상에서 측정한 값."""
+
+    __tablename__ = "footage_segments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+    idx: Mapped[int] = mapped_column(Integer, nullable=False)  # 1부터
+    start: Mapped[float] = mapped_column(Float, nullable=False)  # 초
+    end: Mapped[float] = mapped_column(Float, nullable=False)
+    duration: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
