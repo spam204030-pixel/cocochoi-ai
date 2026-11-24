@@ -12,12 +12,13 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core.db import Database
 from app.core.errors import ERRORS, AppError, ErrorCode, error_payload
 from app.core.logging import get_logger, setup_logging
 from app.core.settings import Settings, get_settings
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.2"
+APP_VERSION = "0.0.3"
 
 TEMPLATES_DIR = Path(__file__).parent / "web" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -51,6 +52,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title=APP_NAME, version=APP_VERSION)
     app.state.settings = settings
+    db = Database(settings.db_path)
+    db.init()  # DB 파일 생성 + 최신 구조로 맞춤 (기존 데이터 유지)
+    app.state.db = db
     log = get_logger("web")
 
     def health_status() -> dict:
@@ -61,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "version": APP_VERSION,
             "checks": {
                 "storage": "정상" if settings.storage_writable() else "쓰기 불가",
+                "db": "정상" if db.is_ok() else "연결 실패",
                 "ai_key": "설정됨" if settings.ai_key_configured else "없음 (Phase 1부터 필요)",
             },
         }

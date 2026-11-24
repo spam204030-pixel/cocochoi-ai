@@ -1,5 +1,14 @@
 # 변경 기록
 
+## 2026-11-24 — 작업 0-3 DB 기반
+
+- SQLite DB `storage/cocochoi.db` + SQLAlchemy + Alembic. 프로그램을 켜면 DB를 만들고 최신 구조로 맞춤 (기존 데이터 유지)
+- 표 6개: products, assets, projects, project_assets, jobs, role_runs (`app/core/models.py`, 변경 기록 `migrations/versions/0001_phase0_tables.py`)
+- 영상·사진은 DB에 넣지 않고 경로만 저장. 같은 파일 중복 등록 방지(file_hash)
+- 기본 표를 지우는 되돌리기(downgrade)는 막아 둠
+- 설계서와 다른 점: `assets`에 original_name·file_size, `products`·`projects`에 updated_at, `jobs`에 finished_at 추가 (업로드·작업 관리에 필요). `projects.brand_profile_id`는 brand_profiles 표가 생길 때까지 연결 없이 숫자만 저장
+- `/api/health`에 DB 상태 추가
+
 ## 2026-11-24 — 작업 0-2 설정·오류·로그
 
 **만든 것**

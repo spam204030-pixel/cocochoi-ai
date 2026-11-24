@@ -61,6 +61,14 @@ class Settings(BaseSettings):
         return self.storage_dir / "logs"
 
     @property
+    def db_path(self) -> Path:
+        return self.storage_dir / "cocochoi.db"
+
+    @property
+    def db_url(self) -> str:
+        return f"sqlite:///{self.db_path.as_posix()}"
+
+    @property
     def ai_key_configured(self) -> bool:
         return self.anthropic_api_key is not None
 
