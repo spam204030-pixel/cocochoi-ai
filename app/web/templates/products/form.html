@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ "제품 수정" if product else "새 제품 등록" }} · COCOCHOI{% endblock %}
+{% block content %}
+<h1>{{ "제품 수정" if product else "새 제품 등록" }}</h1>
+{% if errors %}<div class="notice err">입력한 내용을 확인해 주세요.</div>{% endif %}
+<form method="post" class="card" action="{{ '/products/%d/edit' % product.id if product else '/products/new' }}">
+  <label for="name">제품명 <span style="color:#b42318">*</span></label>
+  <input type="text" id="name" name="name" value="{{ values.name or '' }}" maxlength="200" required autofocus>
+  {% if errors.name %}<div class="field-error">{{ errors.name }}</div>{% endif %}
+
+  <label for="price">가격 <span class="hint">(선택, 숫자만 · 원)</span></label>
+  <input type="text" id="price" name="price" value="{{ values.price or '' }}" inputmode="numeric" placeholder="19800">
+  {% if errors.price %}<div class="field-error">{{ errors.price }}</div>{% endif %}
+
+  <label for="category">카테고리 <span class="hint">(선택 · 비워두면 나중에 AI가 판단)</span></label>
+  <input type="text" id="category" name="category" value="{{ values.category or '' }}" placeholder="예: 양말, 아우터, 생활용품">
+
+  <label for="purchase_url">구매 링크 <span class="hint">(선택)</span></label>
+  <input type="text" id="purchase_url" name="purchase_url" value="{{ values.purchase_url or '' }}" placeholder="https://">
+  {% if errors.purchase_url %}<div class="field-error">{{ errors.purchase_url }}</div>{% endif %}
+
+  <label for="features">주요 특징 <span class="hint">(선택 · 한 줄에 하나씩. 여기 적은 내용만 사실로 사용됩니다)</span></label>
+  <textarea id="features" name="features" placeholder="무릎 위까지 오는 길이&#10;울 30% 혼방">{{ values.features or '' }}</textarea>
+
+  <label for="description">제품 설명 <span class="hint">(선택)</span></label>
+  <textarea id="description" name="description">{{ values.description or '' }}</textarea>
+
+  <label for="detail_text">상세페이지 내용 <span class="hint">(선택 · 상세페이지 글을 복사해 붙여넣기)</span></label>
+  <textarea id="detail_text" name="detail_text" style="min-height:140px">{{ values.detail_text or '' }}</textarea>
+
+  <div class="row" style="margin-top:24px">
+    <button class="btn" type="submit">{{ "저장" if product else "등록" }}</button>
+    <a class="btn light" href="{{ '/products/%d' % product.id if product else '/products' }}">취소</a>
+  </div>
+</form>
+{% endblock %}

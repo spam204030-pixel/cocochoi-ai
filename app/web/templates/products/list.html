@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}제품 · COCOCHOI{% endblock %}
+{% block content %}
+<div class="row" style="justify-content: space-between; margin-bottom: 16px;">
+  <h1 style="margin:0">제품</h1>
+  <a class="btn" href="/products/new">+ 새 제품 등록</a>
+</div>
+{% if request.query_params.get("deleted") %}<div class="notice ok">제품을 삭제했습니다.</div>{% endif %}
+<form method="get" action="/products" class="row" style="margin-bottom:16px">
+  <input type="search" name="q" value="{{ q }}" placeholder="제품명·카테고리 검색" style="flex:1">
+  <button class="btn light" type="submit">검색</button>
+</form>
+{% if products %}
+<table>
+  <tr><th>제품명</th><th>가격</th><th>카테고리</th><th>등록일</th></tr>
+  {% for p in products %}
+  <tr>
+    <td><a href="/products/{{ p.id }}">{{ p.name }}</a></td>
+    <td>{{ p.price | won }}</td>
+    <td>{{ p.category or "" }}</td>
+    <td class="muted">{{ p.created_at.strftime("%Y-%m-%d") }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<div class="card">{% if q %}"{{ q }}"(으)로 찾은 제품이 없습니다.{% else %}아직 등록된 제품이 없습니다. <a href="/products/new">첫 제품을 등록</a>해 보세요.{% endif %}</div>
+{% endif %}
+{% endblock %}

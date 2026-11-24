@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}COCOCHOI AI CONTENT FACTORY{% endblock %}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: "Pretendard", "Malgun Gothic", sans-serif; margin: 0; background: #faf8f5; color: #222; }
+    header { background: #fff; border-bottom: 1px solid #eee; }
+    header nav { max-width: 880px; margin: 0 auto; padding: 14px 20px; display: flex; gap: 20px; align-items: center; }
+    header .logo { font-weight: 700; letter-spacing: .02em; color: #222; text-decoration: none; margin-right: auto; }
+    header a { color: #555; text-decoration: none; }
+    main { max-width: 880px; margin: 32px auto; padding: 0 20px; }
+    h1 { font-size: 22px; margin: 0 0 20px; }
+    .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; border: 1px solid #222; background: #222; color: #fff;
+           text-decoration: none; font-size: 15px; cursor: pointer; font-family: inherit; }
+    .btn.light { background: #fff; color: #222; }
+    .btn.danger { background: #fff; color: #b42318; border-color: #e0a4a0; }
+    .card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
+    .notice { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .notice.ok { background: #e6f4ea; color: #1e6b34; }
+    .notice.err { background: #fdf0f0; color: #a12828; border: 1px solid #f0b4b4; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #f0ece6; font-size: 15px; }
+    th { background: #f6f2ec; font-weight: 600; color: #555; }
+    td a { color: #222; font-weight: 600; text-decoration: none; }
+    .muted { color: #888; font-size: 14px; }
+    label { display: block; font-weight: 600; margin: 18px 0 6px; }
+    input[type=text], input[type=search], textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+           font-size: 15px; font-family: inherit; background: #fff; }
+    textarea { min-height: 96px; resize: vertical; }
+    .hint { color: #888; font-weight: 400; font-size: 13px; }
+    .field-error { color: #b42318; font-size: 14px; margin-top: 4px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    @media (max-width: 600px) { main { margin-top: 20px; } th:nth-child(3), td:nth-child(3) { display: none; } }
+  </style>
+</head>
+<body>
+  <header><nav>
+    <a class="logo" href="/">COCOCHOI AI CONTENT FACTORY</a>
+    <a href="/products">제품</a>
+  </nav></header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

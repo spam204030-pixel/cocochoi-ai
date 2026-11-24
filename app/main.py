@@ -4,12 +4,10 @@
 """
 
 import uuid
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.db import Database
@@ -17,12 +15,13 @@ from app.core.errors import ERRORS, AppError, ErrorCode, error_payload
 from app.core.logging import get_logger, setup_logging
 from app.core.settings import Settings, get_settings
 from app.media.probe import WINDOWS_INSTALL_GUIDE, check_ffmpeg
+from app.products.routes import api as products_api
+from app.products.routes import pages as products_pages
+from app.web.templating import templates
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.4"
+APP_VERSION = "0.0.5"
 
-TEMPLATES_DIR = Path(__file__).parent / "web" / "templates"
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 _HTTP_STATUS_TO_CODE = {
     404: ErrorCode.NOT_FOUND,
@@ -85,6 +84,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "home.html",
             {"health": health_status(), "ffmpeg": ffmpeg, "ffmpeg_guide": WINDOWS_INSTALL_GUIDE},
         )
+
+    app.include_router(products_api)
+    app.include_router(products_pages)
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError):

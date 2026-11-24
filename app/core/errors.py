@@ -21,6 +21,7 @@ class ErrorCode(StrEnum):
     AI_UNAVAILABLE = "AI_UNAVAILABLE"
     AI_BAD_OUTPUT = "AI_BAD_OUTPUT"
     STORAGE_ERROR = "STORAGE_ERROR"
+    PRODUCT_IN_USE = "PRODUCT_IN_USE"
     FFMPEG_MISSING = "FFMPEG_MISSING"
     MEDIA_UNREADABLE = "MEDIA_UNREADABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
@@ -72,6 +73,11 @@ ERRORS: dict[ErrorCode, ErrorInfo] = {
         500,
         "파일을 저장하거나 읽는 중에 문제가 생겼습니다.",
         "컴퓨터 저장 공간과 storage 폴더를 확인해 주세요.",
+    ),
+    ErrorCode.PRODUCT_IN_USE: ErrorInfo(
+        409,
+        "이 제품으로 만든 콘텐츠가 있어서 삭제할 수 없습니다.",
+        "연결된 콘텐츠를 먼저 정리한 뒤 다시 삭제해 주세요.",
     ),
     ErrorCode.FFMPEG_MISSING: ErrorInfo(
         503,

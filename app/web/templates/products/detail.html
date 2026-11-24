@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} · COCOCHOI{% endblock %}
+{% block content %}
+{% if saved %}<div class="notice ok">저장했습니다.</div>{% endif %}
+{% if error == "in_use" %}<div class="notice err">이 제품으로 만든 콘텐츠가 있어서 삭제할 수 없습니다.</div>{% endif %}
+<div class="row" style="justify-content: space-between; margin-bottom: 16px;">
+  <h1 style="margin:0">{{ product.name }}</h1>
+  <a class="btn light" href="/products/{{ product.id }}/edit">수정</a>
+</div>
+<div class="card">
+  <p><strong>가격</strong> · {{ product.price | won if product.price is not none else "입력 안 함" }}</p>
+  <p><strong>카테고리</strong> · {{ product.category or "입력 안 함" }}</p>
+  <p><strong>구매 링크</strong> · {% if product.purchase_url %}<a href="{{ product.purchase_url }}" target="_blank" rel="noopener">{{ product.purchase_url }}</a>{% else %}입력 안 함{% endif %}</p>
+  <p><strong>주요 특징</strong></p>
+  {% if product.features %}<ul>{% for f in product.features %}<li>{{ f }}</li>{% endfor %}</ul>{% else %}<p class="muted">입력 안 함</p>{% endif %}
+  {% if product.description %}<p><strong>제품 설명</strong></p><p style="white-space:pre-line">{{ product.description }}</p>{% endif %}
+  {% if product.detail_text %}<details><summary><strong>상세페이지 내용</strong></summary><p style="white-space:pre-line">{{ product.detail_text }}</p></details>{% endif %}
+  <p class="muted">등록 {{ product.created_at.strftime("%Y-%m-%d %H:%M") }} · 수정 {{ product.updated_at.strftime("%Y-%m-%d %H:%M") }}</p>
+</div>
+<form method="post" action="/products/{{ product.id }}/delete" onsubmit="return confirm('「{{ product.name }}」 제품을 삭제할까요? 되돌릴 수 없습니다.');">
+  <button class="btn danger" type="submit">제품 삭제</button>
+</form>
+{% endblock %}
