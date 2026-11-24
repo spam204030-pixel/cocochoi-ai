@@ -25,6 +25,7 @@ def tmp_settings(tmp_path):
         worker_enabled=False,  # 테스트는 작업자를 직접 실행
         fake_step_seconds=0,
         ai_retry_backoff=0,
+        ai_mode="fake",  # 기존 검사는 가짜 AI로 (/공장 검사는 test_bridge.py)
     )
 
 

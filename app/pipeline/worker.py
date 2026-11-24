@@ -16,8 +16,9 @@ from app.core.logging import get_logger
 from app.core.models import Job, Project, RoleRun, utcnow
 from app.core.settings import Settings
 from app.pipeline import engine
-from app.pipeline.handlers import HANDLERS, StepCancelled
+from app.pipeline.handlers import HANDLERS, StepCancelled, StepWaiting
 from app.pipeline.steps import STEP_NAMES, next_step
+from app.providers.claude_code import ClaudeCodeBridge
 
 log = get_logger("worker")
 
@@ -30,6 +31,8 @@ class StepContext:
     settings: Settings
     should_stop: Callable[[], bool]
     ai: object | None = None  # AIGateway
+    bridge: ClaudeCodeBridge | None = None
+    job_id: int | None = None
 
 
 class Worker:
@@ -37,6 +40,8 @@ class Worker:
         self.session_factory = session_factory
         self.settings = settings
         self.ai = ai
+        use_bridge = settings.ai_mode == "claude_code"
+        self.bridge = ClaudeCodeBridge(settings.bridge_dir, session_factory) if use_bridge else None
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -83,9 +88,14 @@ class Worker:
             step, pid = job.step_key, job.project_id
 
         log.info("단계 시작 #%s %s (v%s)", pid, STEP_NAMES.get(step, step), run.version)
-        ctx = StepContext(pid, step, run, self.settings, lambda: self._is_cancelled(pid), self.ai)
+        ctx = StepContext(
+            pid, step, run, self.settings, lambda: self._is_cancelled(pid), self.ai, self.bridge, job_id
+        )
         try:
             output = HANDLERS[step](ctx)
+        except StepWaiting as wait:
+            self._set_waiting(job_id, run.id)
+            log.info("Claude 처리 대기 #%s %s (%s)", pid, step, wait.request_id)
         except StepCancelled:
             self._finish(job_id, run.id, "cancelled")
             log.info("단계 취소 #%s %s", pid, step)
@@ -129,6 +139,57 @@ class Worker:
                     engine.enqueue(s, project.id, nxt)
             s.commit()
 
+    # ---------- /공장 응답 처리 ----------
+
+    def _set_waiting(self, job_id: int, run_id: int) -> None:
+        with self.session_factory() as s:
+            s.get(Job, job_id).status = "waiting"
+            s.get(RoleRun, run_id).status = "waiting_ai"
+            s.commit()
+
+    def poll_bridge(self) -> int:
+        """도착한 응답서를 반영한다. 처리한 응답 수를 돌려준다."""
+        if self.bridge is None:
+            return 0
+        handled = 0
+        with self.session_factory() as s:
+            rows = self.bridge.waiting(s)
+            pending = []
+            for row in rows:
+                job = s.get(Job, row.job_id) if row.job_id else None
+                if job is None or job.status != "waiting":  # 취소 등으로 더 이상 기다리지 않음
+                    self.bridge.cancel(row)
+                    continue
+                result = self.bridge.check(s, row)
+                if result is not None:
+                    pending.append(
+                        (
+                            result.kind,
+                            row.job_id,
+                            row.run_id,
+                            row.call_key,
+                            row.request_id,
+                            result.data,
+                            result.error,
+                        )
+                    )
+            s.commit()
+        for kind, job_id, run_id, call, rid, data, error in pending:
+            if kind == "done":
+                output = {
+                    "call": call,
+                    "provider": "claude_code",
+                    "model": "구독",
+                    "cost": 0,
+                    "request_id": rid,
+                    "result": data,
+                }
+                self._finish(job_id, run_id, "succeeded", output=output)
+            elif kind == "failed":
+                self._finish(job_id, run_id, "failed", error_code="AI_BAD_OUTPUT", error=error)
+            handled += 1
+        return handled
+
     # ---------- 백그라운드 실행 ----------
 
     def _loop(self) -> None:
@@ -137,6 +198,7 @@ class Worker:
         while not self._stop.is_set():
             try:
                 worked = self.run_once()
+                worked = self.poll_bridge() > 0 or worked
             except Exception:
                 log.exception("작업자 오류 — 잠시 후 계속합니다")
                 worked = False

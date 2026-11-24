@@ -56,6 +56,15 @@ def _error_response(request: Request, code: ErrorCode, detail: str = "", error_i
     )
 
 
+def pc_spec() -> str:
+    """PC 메모리·CPU (설계서 V4-13 기준 사양 확인용)."""
+    import psutil
+
+    ram = psutil.virtual_memory().total / 1024**3
+    note = "" if ram >= 7.5 else " (권장 8GB 미만)"
+    return f"메모리 {ram:.0f}GB{note} · CPU {psutil.cpu_count(logical=True)}개"
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     settings.ensure_storage()
@@ -96,9 +105,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "db": "정상" if db.is_ok() else "연결 실패",
                 "ffmpeg": ffmpeg.label,
                 "ai_key": "설정됨" if settings.ai_key_configured else "없음 (Phase 1부터 필요)",
-                "ai_provider": "시험용 가짜 공급자 (비용 0원)"
-                if registry.all_fake()
-                else "실제 공급자 연결됨",
+                "ai_provider": "Claude 구독 (/공장, 추가 비용 0원)"
+                if settings.ai_mode == "claude_code"
+                else "시험용 가짜 공급자 (비용 0원)",
+                "pc": pc_spec(),
             },
         }
 

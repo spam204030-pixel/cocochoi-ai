@@ -33,7 +33,7 @@ def test_projects_go_to_right_columns(client, test_app):
     with db.session_factory() as s:
         engine.start(s, done_id)
     wait_until_idle(worker)
-    worker.settings.fake_fail_step = "strategy"
+    worker.settings.fake_fail_step = "planning"
     with db.session_factory() as s:
         engine.start(s, failed_id)
     wait_until_idle(worker)
@@ -47,7 +47,7 @@ def test_projects_go_to_right_columns(client, test_app):
     assert (
         "⚠ 오류 콘텐츠" in board["제작 중"]
         and "오류로 멈춤" in board["제작 중"]
-        and "2/8" in board["제작 중"]
+        and "2/7" in board["제작 중"]
     )
     assert "⚠ 끝난 콘텐츠" in board["검수 대기"] and "확인하기" in board["검수 대기"]
     assert f'href="/projects/{done_id}"' in page
@@ -60,7 +60,7 @@ def test_running_board_auto_refreshes(client, test_app):
     with db.session_factory() as s:
         engine.start(s, pid)
     page = client.get("/").text
-    assert 'http-equiv="refresh"' in page and "0/8" in page
+    assert 'http-equiv="refresh"' in page and "0/7" in page
 
 
 def test_month_cost_only_counts_this_month(client, test_app):

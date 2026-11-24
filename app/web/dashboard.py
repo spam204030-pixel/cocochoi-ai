@@ -37,8 +37,12 @@ def board(session: Session) -> dict:
             "status_label": state["status_label"],
             "done": state["done_count"],
             "total": len(STEP_KEYS),
-            "current": next((s["name"] for s in state["steps"] if s["status"] == "running"), None),
-            "needs_user": project.status in ("failed", "waiting_user", "paused"),
+            "current": next(
+                (s["name"] for s in state["steps"] if s["status"] in ("running", "waiting_ai")), None
+            ),
+            "waiting_ai": any(st["status"] == "waiting_ai" for st in state["steps"]),
+            "needs_user": project.status in ("failed", "waiting_user", "paused")
+            or any(st["status"] == "waiting_ai" for st in state["steps"]),
             "ai_cost": state["ai_cost"],
         }
         any_running = any_running or project.status == "running"

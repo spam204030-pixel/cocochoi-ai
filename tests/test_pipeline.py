@@ -61,7 +61,7 @@ def test_full_run_completes_all_steps_in_order(ctx):
         assert active_jobs(db, pid) <= 1  # 한 번에 하나만
     assert order == STEP_KEYS
     s = state(db, pid)
-    assert s["status"] == "waiting_user" and s["board_status"] == "검수 대기" and s["done_count"] == 8
+    assert s["status"] == "waiting_user" and s["board_status"] == "검수 대기" and s["done_count"] == 7
     assert s["steps"][0]["output"]["fake"] is True
 
 
@@ -92,7 +92,7 @@ def test_pause_during_step_finishes_that_step_then_stops(ctx, monkeypatch):
         do(db, engine.pause, c.project_id)  # 단계 진행 중에 일시정지 누름
         return {"fake": True}
 
-    monkeypatch.setitem(handlers.HANDLERS, "strategy", pausing)
+    monkeypatch.setitem(handlers.HANDLERS, "planning", pausing)
     monkeypatch.setattr("app.pipeline.worker.HANDLERS", handlers.HANDLERS)
     do(db, engine.start, pid)
     wait_until_idle(worker)
@@ -100,10 +100,10 @@ def test_pause_during_step_finishes_that_step_then_stops(ctx, monkeypatch):
     assert statuses(db, pid)[3] == "pending"  # 다음 단계로 넘어가지 않음
     assert state(db, pid)["status"] == "paused" and active_jobs(db, pid) == 0
 
-    monkeypatch.setitem(handlers.HANDLERS, "strategy", handlers.fake_step)
+    monkeypatch.setitem(handlers.HANDLERS, "planning", handlers.fake_step)
     do(db, engine.resume, pid)
     wait_until_idle(worker)
-    assert state(db, pid)["done_count"] == 8
+    assert state(db, pid)["done_count"] == 7
 
 
 def test_cancel_during_step_keeps_finished_results(ctx, test_app, monkeypatch):
@@ -113,7 +113,7 @@ def test_cancel_during_step_keeps_finished_results(ctx, test_app, monkeypatch):
         do(db, engine.cancel, c.project_id)
         return handlers.fake_step(c)  # 취소를 확인하고 멈춤
 
-    monkeypatch.setitem(handlers.HANDLERS, "planning", cancelling)
+    monkeypatch.setitem(handlers.HANDLERS, "script_check", cancelling)
     do(db, engine.start, pid)
     wait_until_idle(worker)
     st = statuses(db, pid)
@@ -121,18 +121,18 @@ def test_cancel_during_step_keeps_finished_results(ctx, test_app, monkeypatch):
     assert state(db, pid)["status"] == "cancelled" and active_jobs(db, pid) == 0
 
     # 다시 시작하면 새 버전(v2)으로 처음부터, 예전 결과는 보관
-    monkeypatch.setitem(handlers.HANDLERS, "planning", handlers.fake_step)
+    monkeypatch.setitem(handlers.HANDLERS, "script_check", handlers.fake_step)
     do(db, engine.start, pid)
     wait_until_idle(worker)
     assert state(db, pid)["status"] == "waiting_user"
     assert {st["version"] for st in state(db, pid)["steps"]} == {2}
     with db.session_factory() as s:
-        assert s.scalar(select(func.count()).select_from(RoleRun).where(RoleRun.project_id == pid)) == 16
+        assert s.scalar(select(func.count()).select_from(RoleRun).where(RoleRun.project_id == pid)) == 14
 
 
 def test_failed_step_retry_does_not_redo_earlier_steps(ctx):
     db, worker, pid = ctx
-    worker.settings.fake_fail_step = "strategy"
+    worker.settings.fake_fail_step = "planning"
     do(db, engine.start, pid)
     wait_until_idle(worker)
     s = state(db, pid)
@@ -140,24 +140,24 @@ def test_failed_step_retry_does_not_redo_earlier_steps(ctx):
     assert statuses(db, pid)[:3] == ["succeeded", "succeeded", "failed"]
     assert s["steps"][2]["error"] == "AI_UNAVAILABLE"
 
-    do(db, engine.rerun_from, pid, "strategy")
+    do(db, engine.rerun_from, pid, "planning")
     wait_until_idle(worker)
     s = state(db, pid)
     assert s["status"] == "waiting_user"
-    assert [st["version"] for st in s["steps"]] == [1, 1, 2, 2, 2, 2, 2, 2]  # 앞 두 단계는 다시 하지 않음
+    assert [st["version"] for st in s["steps"]] == [1, 1, 2, 2, 2, 2, 2]  # 앞 두 단계는 다시 하지 않음
 
 
 def test_rerun_from_middle_after_completion(ctx):
     db, worker, pid = ctx
     do(db, engine.start, pid)
     wait_until_idle(worker)
-    do(db, engine.rerun_from, pid, "script")
+    do(db, engine.rerun_from, pid, "captions")
     wait_until_idle(worker)
-    assert [st["version"] for st in state(db, pid)["steps"]] == [1, 1, 1, 1, 2, 2, 2, 2]
+    assert [st["version"] for st in state(db, pid)["steps"]] == [1, 1, 1, 1, 2, 2, 2]
     with db.session_factory() as s:
         old = s.scalars(
             select(RoleRun).where(
-                RoleRun.project_id == pid, RoleRun.role_key == "script", RoleRun.version == 1
+                RoleRun.project_id == pid, RoleRun.role_key == "captions", RoleRun.version == 1
             )
         ).one()
         assert old.status == "stale"  # 예전 결과는 보관
@@ -165,11 +165,11 @@ def test_rerun_from_middle_after_completion(ctx):
 
 def test_rerun_requires_previous_steps_done(ctx):
     db, worker, pid = ctx
-    worker.settings.fake_fail_step = "strategy"
+    worker.settings.fake_fail_step = "planning"
     do(db, engine.start, pid)
     wait_until_idle(worker)
     with pytest.raises(AppError) as exc:
-        do(db, engine.rerun_from, pid, "script")
+        do(db, engine.rerun_from, pid, "captions")
     assert exc.value.code == "INVALID_ACTION"
 
 
@@ -186,7 +186,7 @@ def test_recover_after_crash(ctx):
 
 def test_unexpected_error_marks_failed_and_worker_continues(ctx, monkeypatch):
     db, worker, pid = ctx
-    monkeypatch.setitem(handlers.HANDLERS, "script", lambda c: 1 / 0)
+    monkeypatch.setitem(handlers.HANDLERS, "captions", lambda c: 1 / 0)
     do(db, engine.start, pid)
     wait_until_idle(worker)
     s = state(db, pid)
@@ -198,10 +198,10 @@ def test_api_and_page_buttons(client, ctx):
     db, worker, pid = ctx
     assert client.get(f"/api/projects/{pid}/pipeline").json()["status"] == "ready"
     page = client.get(f"/projects/{pid}")
-    assert "시험 실행 시작" in page.text and "상품 분석" in page.text
+    assert "제작 시작" in page.text and "상품·소재 분석" in page.text
 
     res = client.post(f"/projects/{pid}/run/start", follow_redirects=True)
-    assert "시험 실행을 시작했습니다" in res.text and "일시정지" in res.text
+    assert "제작을 시작했습니다" in res.text and "일시정지" in res.text
     res = client.post(f"/projects/{pid}/run/start", follow_redirects=True)
     assert "이미 제작이 진행 중입니다" in res.text
 
@@ -210,7 +210,7 @@ def test_api_and_page_buttons(client, ctx):
     client.post(f"/api/projects/{pid}/resume")
     wait_until_idle(worker)
     page = client.get(f"/projects/{pid}").text
-    assert "대표님 확인" in page and "시험 실행이 끝났습니다" in page
+    assert "대표님 확인" in page and "모든 단계가 끝났습니다" in page
     assert client.post(f"/api/projects/{pid}/nope").status_code == 404
     assert (
         client.patch(f"/api/projects/{pid}", json={"target_length": 15}).json()["error"]["code"]
@@ -236,4 +236,4 @@ def test_background_worker_runs_with_server(tmp_settings):
             and client.get(f"/api/projects/{proj_id}/pipeline").json()["status"] != "waiting_user"
         ):
             time.sleep(0.05)
-        assert client.get(f"/api/projects/{proj_id}/pipeline").json()["done_count"] == 8
+        assert client.get(f"/api/projects/{proj_id}/pipeline").json()["done_count"] == 7

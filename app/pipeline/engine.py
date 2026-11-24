@@ -16,7 +16,7 @@ from app.pipeline.steps import PROJECT_STATUS, STEP_KEYS
 
 log = get_logger("pipeline")
 
-ACTIVE_JOB = ("queued", "running", "paused")
+ACTIVE_JOB = ("queued", "running", "paused", "waiting")  # waiting = /공장 응답 대기
 
 
 def set_project_status(project: Project, status: str) -> None:
@@ -125,11 +125,11 @@ def cancel(session: Session, project_id: int) -> None:
     now = utcnow()
     session.execute(
         update(Job)
-        .where(Job.project_id == project_id, Job.status.in_(("queued", "paused")))
+        .where(Job.project_id == project_id, Job.status.in_(("queued", "paused", "waiting")))
         .values(status="cancelled", finished_at=now)
     )
     for run in latest_runs(session, project_id).values():
-        if run.status in ("pending", "queued", "paused"):
+        if run.status in ("pending", "queued", "paused", "waiting_ai"):
             run.status = "cancelled"
     session.commit()  # 실행 중인 단계는 작업자가 취소를 확인하고 멈춘다
     log.info("취소 #%s", project_id)

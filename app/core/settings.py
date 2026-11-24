@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     # 시험 실행(가짜 작업): 단계당 걸리는 시간, 일부러 실패시킬 단계(시험용)
     fake_step_seconds: float = 1.5
     fake_fail_step: str | None = None
+    # AI 연결 방식: claude_code(구독 + /공장, 실제 사용) | fake(시험용)
+    ai_mode: str = "claude_code"
 
     # AI 공급자·단가 설정 파일, 일시적 오류 재시도 간격(초)
     providers_file: Path = PROJECT_ROOT / "config" / "providers.yaml"
@@ -90,6 +92,10 @@ class Settings(BaseSettings):
     @property
     def assets_dir(self) -> Path:
         return self.storage_dir / "assets"
+
+    @property
+    def bridge_dir(self) -> Path:
+        return self.storage_dir / "bridge"
 
     @property
     def tmp_dir(self) -> Path:

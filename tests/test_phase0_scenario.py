@@ -108,15 +108,15 @@ def test_phase0_full_scenario(client, test_app, tmp_path):
     client.post(f"/projects/{project_id}/run/resume")
     wait_until_idle(worker)
     state = client.get(f"/api/projects/{project_id}/pipeline").json()
-    assert state["status"] == "waiting_user" and state["done_count"] == 8
-    assert state["ai_calls"] == 7 and state["ai_cost"] == 0
+    assert state["status"] == "waiting_user" and state["done_count"] == 7
+    assert state["ai_calls"] == 3 and state["ai_cost"] == 0
     assert all(s["version"] == 1 for s in state["steps"])  # 일시정지·재개로 다시 한 단계 없음
 
     # 6. 현황판 '검수 대기' + 상세 화면
     board = client.get("/").text.split("<strong>검수 대기</strong>")[1].split("</section>")[0]
     assert "⚠ 니삭스 쇼츠 1편" in board
     detail = client.get(f"/projects/{project_id}").text
-    assert "대표님 확인" in detail and "AI 사용 7회 · 비용 0원" in detail
+    assert "대표님 확인" in detail and "AI 사용 3회 · 비용 0원" in detail
 
     # 7. 쓰인 제품·파일은 지울 수 없음 (데이터 보호)
     assert client.delete(f"/api/products/{product_id}").json()["error"]["code"] == "PRODUCT_IN_USE"

@@ -30,7 +30,7 @@
       {% if c.product and c.product != c.title %}<div class="muted" style="font-size:13px">{{ c.product }}</div>{% endif %}
       {% if c.status in ("running", "paused", "failed") %}
       <div class="bar"><span style="width:{{ (c.done / c.total * 100)|round|int }}%"></span></div>
-      <div class="muted" style="font-size:13px">{{ c.status_label }}{% if c.current %} · {{ c.current }}{% endif %} · {{ c.done }}/{{ c.total }}</div>
+      <div class="muted" style="font-size:13px">{{ c.status_label }}{% if c.current %} · {{ c.current }}{% endif %} · {{ c.done }}/{{ c.total }}{% if c.waiting_ai %}<br><strong style="color:#8a6100">⏳ Claude 창에 /공장 입력</strong>{% endif %}</div>
       {% else %}
       <div class="muted" style="font-size:13px">{{ c.status_label }}{% if c.status == "waiting_user" %} · 확인하기{% endif %}</div>
       {% endif %}
@@ -45,7 +45,7 @@
 <p class="muted" style="margin-top:28px;font-size:13px">
   프로그램 상태: {{ "✅" if health.status == "ok" }} {{ health.message }} · 버전 {{ health.version }} ·
   {% if ffmpeg.installed %}영상 처리 프로그램(FFmpeg): 정상 · 버전 {{ ffmpeg.version }}{% else %}FFmpeg 없음{% endif %} ·
-  AI: {{ health.checks.ai_provider }}
+  AI: {{ health.checks.ai_provider }} · PC: {{ health.checks.pc }}
 </p>
 <style>
   .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }

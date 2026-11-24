@@ -203,7 +203,7 @@ def test_pipeline_records_fake_usage(client, test_app):
     wait_until_idle(test_app.state.worker)
     state = client.get(f"/api/projects/{pid}/pipeline").json()
     assert state["status"] == "waiting_user"
-    assert state["ai_calls"] == 7 and state["ai_cost"] == 0  # AI 6번 + 시험 음성 1번
-    assert [r.call_key for r in logs(db, pid)] == ["B", "A", "C", "D", "tts", "F", "G1"]
-    assert "AI 사용 7회 · 비용 0원" in client.get(f"/projects/{pid}").text
+    assert state["ai_calls"] == 3 and state["ai_cost"] == 0  # AI 단계 3개
+    assert [r.call_key for r in logs(db, pid)] == ["B", "D", "G1"]
+    assert "AI 사용 3회 · 비용 0원" in client.get(f"/projects/{pid}").text
     assert "시험용 가짜 공급자" in client.get("/api/health").json()["checks"]["ai_provider"]

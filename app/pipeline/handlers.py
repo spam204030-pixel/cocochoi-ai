@@ -1,28 +1,37 @@
-"""단계 처리기. 지금은 모두 '시험 실행(가짜 작업)'이다.
+"""단계 처리기.
 
-실제 AI·편집 기능은 Phase 1 이후 단계별로 이 자리를 교체한다.
-가짜 작업은 비용이 들지 않고, 결과에 fake=True 가 표시된다.
+- fake 모드: 모든 단계가 시험 실행(가짜 작업). 비용 0원, 결과에 fake=True
+- claude_code 모드: AI 단계는 /공장 요청서를 만들고 대기(StepWaiting), 나머지는 아직 시험 실행
+  (실제 분석·검사 내용은 1-2 이후 작업에서 단계별로 교체)
 """
 
 import time
 
 from app.core.errors import AppError, ErrorCode
-from app.pipeline.steps import STEP_KEYS, STEP_NAMES
+from app.pipeline.steps import AI_STEPS, STEP_KEYS, STEP_NAMES
 from app.providers.base import LLMRequest
 
 # 단계 → AI 호출 (PROMPTS.md). 전략·기획은 호출 C 하나로 함께 처리
-STEP_CALLS = {
-    "product_analysis": "B",
-    "media_analysis": "A",
-    "strategy": "C",
-    "script": "D",
-    "quality": "F",
-    "platform": "G1",
-}
+STEP_CALLS = {"analysis": "B", "planning": "D", "captions": "G1"}
 
 
 class StepCancelled(Exception):
     """사용자가 취소함."""
+
+
+class StepWaiting(Exception):
+    """/공장 요청서를 만들고 Claude 응답을 기다림."""
+
+    def __init__(self, request_id: str) -> None:
+        super().__init__(request_id)
+        self.request_id = request_id
+
+
+PING_PROMPT = """[연결 확인 — 작업 1-1]
+이 요청서는 프로그램과 Claude 구독(/공장) 연결을 확인하기 위한 것이다. 실제 분석은 하지 않는다.
+output_schema 에 맞춰 {{"ok": true, "note": "묶음 {batch} ({step}) 연결 확인"}} 형식의
+JSON 하나만 응답서로 쓴다.
+"""
 
 
 def fake_step(ctx) -> dict:
@@ -47,17 +56,26 @@ def fake_step(ctx) -> dict:
         )
         resp = ctx.ai.call_llm(req, project_id=ctx.project_id, role_key=ctx.step)
         output.update(call=call, provider=resp.result.provider, model=resp.result.model, cost=resp.cost)
-    elif ctx.step == "production" and ctx.ai is not None:
-        out = (
-            ctx.settings.storage_dir
-            / "projects"
-            / str(ctx.project_id)
-            / "audio"
-            / f"fake_v{ctx.run.version}.wav"
-        )
-        tts = ctx.ai.tts("시험용 나레이션입니다", out, project_id=ctx.project_id, role_key=ctx.step)
-        output.update(tts_seconds=tts.duration)
     return output
 
 
-HANDLERS = {key: fake_step for key in STEP_KEYS}
+def ai_step(ctx) -> dict:
+    """claude_code 모드: 요청서를 만들고 대기. fake 모드: 시험 실행."""
+    if ctx.settings.ai_mode != "claude_code" or ctx.bridge is None:
+        return fake_step(ctx)
+    if ctx.should_stop():
+        raise StepCancelled
+    call, batch = AI_STEPS[ctx.step]
+    rid = ctx.bridge.create(
+        project_id=ctx.project_id,
+        job_id=ctx.job_id,
+        run_id=ctx.run.id,
+        step=ctx.step,
+        call=call,
+        batch=batch,
+        prompt=PING_PROMPT.format(batch=batch, step=STEP_NAMES[ctx.step]),
+    )
+    raise StepWaiting(rid)
+
+
+HANDLERS = {key: (ai_step if key in AI_STEPS else fake_step) for key in STEP_KEYS}

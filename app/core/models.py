@@ -168,3 +168,24 @@ class UsageLog(Base):
     ok: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class BridgeRequest(Base):
+    """/공장 요청서 (Claude 구독 반자동 연결). 파일은 storage/bridge/ 에 있다."""
+
+    __tablename__ = "bridge_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
+    job_id: Mapped[int | None] = mapped_column(Integer)
+    run_id: Mapped[int | None] = mapped_column(Integer)
+    step_key: Mapped[str] = mapped_column(String(40), nullable=False)
+    call_key: Mapped[str] = mapped_column(String(20), nullable=False)
+    batch: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    # waiting / done / failed / cancelled
+    status: Mapped[str] = mapped_column(String(20), default="waiting", nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    retry_reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
