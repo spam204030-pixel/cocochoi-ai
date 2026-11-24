@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ project.title }} · COCOCHOI{% endblock %}
+{% block content %}
+{% if saved %}<div class="notice ok">저장했습니다.</div>{% endif %}
+<div class="row" style="justify-content: space-between; margin-bottom: 16px;">
+  <h1 style="margin:0">{{ project.title }}</h1>
+  {% if project.status == "ready" %}<a class="btn light" href="/projects/{{ project.id }}/edit">설정 수정</a>{% endif %}
+</div>
+<div class="card">
+  <p><strong>상태</strong> · {{ project.board_status }} <span class="muted">(준비됨 — 제작 기능은 다음 단계에서 연결됩니다)</span></p>
+  <p><strong>제품</strong> · <a href="/products/{{ product.id }}">{{ product.name }}</a></p>
+  <p><strong>영상 길이</strong> · {{ project.target_length }}초</p>
+  <p><strong>스타일 프리셋</strong> · {{ "자동 추천" if project.style_preset == "auto" else project.style_preset }} <span class="muted">{{ presets.get(project.style_preset, "") }}</span></p>
+  <p><strong>나레이션</strong> · {{ narration_modes[project.narration_mode] }}</p>
+  <p><strong>플랫폼</strong> · {% for p in project.platforms or [] %}{{ platforms[p] }}{{ ", " if not loop.last }}{% endfor %}</p>
+  <p><strong>광고 표기</strong> · {{ ad_modes[project.ad_mode] }}</p>
+  <p><strong>AI 예산 상한</strong> · {{ project.budget_limit | won if project.budget_limit is not none else "설정 안 함" }}</p>
+  <p><strong>완전 자동</strong> · {{ "켬" if project.auto_mode else "끔" }} · <strong>품질 합격선</strong> {{ project.quality_threshold }}점 · <strong>자동 수정</strong> 최대 {{ project.max_fix_rounds }}회</p>
+</div>
+<div class="card">
+  <h2 style="font-size:17px;margin:0 0 12px">사용할 소재 ({{ assets|length }}개)</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">
+    {% for a in assets %}
+    <div style="border:1px solid #eee;border-radius:8px;overflow:hidden;background:#fff">
+      <img src="/media/{{ a.id }}/thumb" alt="" loading="lazy" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:#f3efe9">
+      <div style="padding:6px 8px;font-size:12px" class="muted">{{ "사진" if a.kind == "product_photo" else "영상 " ~ (a.duration | seconds) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

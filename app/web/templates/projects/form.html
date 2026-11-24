@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ "콘텐츠 설정 수정" if project else "새 콘텐츠" }} · COCOCHOI{% endblock %}
+{% block content %}
+<h1>{{ "콘텐츠 설정 수정" if project else "새 콘텐츠" }}</h1>
+{% if errors %}<div class="notice err">입력한 내용을 확인해 주세요.</div>{% endif %}
+
+{% if not project %}
+<form method="get" action="/projects/new" class="card">
+  <label for="product_id" style="margin-top:0">제품 <span style="color:#b42318">*</span></label>
+  {% if products %}
+  <div class="row">
+    <select id="product_id" name="product_id" onchange="this.form.submit()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px">
+      <option value="">제품을 고르세요</option>
+      {% for p in products %}<option value="{{ p.id }}" {{ "selected" if product and product.id == p.id }}>{{ p.name }}</option>{% endfor %}
+    </select>
+    <noscript><button class="btn light" type="submit">불러오기</button></noscript>
+  </div>
+  {% else %}
+  <p>먼저 <a href="/products/new">제품을 등록</a>해 주세요.</p>
+  {% endif %}
+  {% if errors.product_id %}<div class="field-error">{{ errors.product_id }}</div>{% endif %}
+</form>
+{% endif %}
+
+{% if product %}
+<form method="post" action="{{ '/projects/%d/edit' % project.id if project else '/projects/new' }}">
+  <input type="hidden" name="product_id" value="{{ product.id }}">
+  <div class="card">
+    <h2 style="font-size:17px;margin:0 0 4px">사용할 소재 · {{ product.name }}</h2>
+    <p class="muted" style="margin:0 0 12px">제품 사진이 1장 이상 있어야 합니다. 영상은 없어도 됩니다.</p>
+    {% if errors.asset_ids %}<div class="field-error" style="margin-bottom:8px">{{ errors.asset_ids }}</div>{% endif %}
+    {% if assets %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+      {% for a in assets %}
+      <label style="margin:0;font-weight:400;border:1px solid #eee;border-radius:8px;overflow:hidden;cursor:pointer;background:#fff">
+        <img src="/media/{{ a.id }}/thumb" alt="" loading="lazy" style="width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:#f3efe9">
+        <div style="padding:6px 8px;font-size:12px">
+          <input type="checkbox" name="asset_ids" value="{{ a.id }}" {{ "checked" if a.id in (values.asset_ids or []) }}>
+          {{ "사진" if a.kind == "product_photo" else "영상 " ~ (a.duration | seconds) }}
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p>이 제품에 올린 사진·영상이 없습니다. <a href="/products/{{ product.id }}#assets">제품 화면에서 올려 주세요.</a></p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <label for="title" style="margin-top:0">제목 <span class="hint">(선택 · 비워두면 제품명)</span></label>
+    <input type="text" id="title" name="title" value="{{ values.title or '' }}" maxlength="300">
+
+    <label>영상 길이</label>
+    <div class="row">{% for n in lengths %}
+      <label style="margin:0;font-weight:400"><input type="radio" name="target_length" value="{{ n }}" {{ "checked" if (values.target_length|int) == n }}> {{ n }}초</label>
+    {% endfor %}</div>
+    {% if errors.target_length %}<div class="field-error">{{ errors.target_length }}</div>{% endif %}
+
+    <label for="style_preset">스타일 프리셋</label>
+    <select id="style_preset" name="style_preset" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px">
+      {% for key, desc in presets.items() %}<option value="{{ key }}" {{ "selected" if values.style_preset == key }}>{{ key if key != "auto" else "자동 추천" }} — {{ desc }}</option>{% endfor %}
+    </select>
+    {% if errors.style_preset %}<div class="field-error">{{ errors.style_preset }}</div>{% endif %}
+
+    <label>나레이션</label>
+    <div class="row">{% for key, label in narration_modes.items() %}
+      <label style="margin:0;font-weight:400"><input type="radio" name="narration_mode" value="{{ key }}" {{ "checked" if values.narration_mode == key }}> {{ label }}</label>
+    {% endfor %}</div>
+
+    <label>플랫폼</label>
+    <div class="row">{% for key, label in platforms.items() %}
+      <label style="margin:0;font-weight:400"><input type="checkbox" name="platforms" value="{{ key }}" {{ "checked" if key in (values.platforms or []) }}> {{ label }}</label>
+    {% endfor %}</div>
+    {% if errors.platforms %}<div class="field-error">{{ errors.platforms }}</div>{% endif %}
+
+    <label>광고 표기</label>
+    <div class="row">{% for key, label in ad_modes.items() %}
+      <label style="margin:0;font-weight:400"><input type="radio" name="ad_mode" value="{{ key }}" {{ "checked" if values.ad_mode == key }}> {{ label }}</label>
+    {% endfor %}</div>
+
+    <label for="budget_limit">AI 예산 상한 <span class="hint">(선택 · 원. 넘을 것 같으면 제작 전에 멈추고 확인)</span></label>
+    <input type="text" id="budget_limit" name="budget_limit" value="{{ values.budget_limit if values.budget_limit is not none else '' }}" inputmode="numeric" placeholder="예: 3000">
+    {% if errors.budget_limit %}<div class="field-error">{{ errors.budget_limit }}</div>{% endif %}
+
+    <label style="font-weight:400"><input type="checkbox" name="auto_mode" {{ "checked" if values.auto_mode }}> <strong>완전 자동</strong> <span class="hint">— 켜면 기획 선정 후에도 멈추지 않고 결과까지 진행</span></label>
+  </div>
+
+  <div class="row">
+    <button class="btn" type="submit">{{ "저장" if project else "콘텐츠 만들기" }}</button>
+    <a class="btn light" href="{{ '/projects/%d' % project.id if project else '/projects' }}">취소</a>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

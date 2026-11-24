@@ -6,7 +6,10 @@
 {% if error == "in_use" %}<div class="notice err">이 제품으로 만든 콘텐츠가 있어서 삭제할 수 없습니다.</div>{% endif %}
 <div class="row" style="justify-content: space-between; margin-bottom: 16px;">
   <h1 style="margin:0">{{ product.name }}</h1>
-  <a class="btn light" href="/products/{{ product.id }}/edit">수정</a>
+  <div class="row">
+    <a class="btn" href="/projects/new?product_id={{ product.id }}">이 제품으로 콘텐츠 만들기</a>
+    <a class="btn light" href="/products/{{ product.id }}/edit">수정</a>
+  </div>
 </div>
 <div class="card">
   <p><strong>가격</strong> · {{ product.price | won if product.price is not none else "입력 안 함" }}</p>

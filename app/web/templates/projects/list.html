@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}콘텐츠 · COCOCHOI{% endblock %}
+{% block content %}
+<div class="row" style="justify-content: space-between; margin-bottom: 16px;">
+  <h1 style="margin:0">콘텐츠</h1>
+  <a class="btn" href="/projects/new">+ 새 콘텐츠</a>
+</div>
+{% if projects %}
+<table>
+  <tr><th>제목</th><th>제품</th><th>설정</th><th>상태</th></tr>
+  {% for p in projects %}
+  <tr>
+    <td><a href="/projects/{{ p.id }}">{{ p.title }}</a></td>
+    <td>{{ product_names.get(p.product_id, "") }}</td>
+    <td class="muted">{{ p.target_length }}초 · {{ narration_modes[p.narration_mode] }} · 플랫폼 {{ (p.platforms or [])|length }}개</td>
+    <td>{{ p.board_status }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<div class="card">아직 만든 콘텐츠가 없습니다. <a href="/projects/new">새 콘텐츠</a>를 만들어 보세요.</div>
+{% endif %}
+{% endblock %}

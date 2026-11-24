@@ -26,6 +26,8 @@ class ErrorCode(StrEnum):
     ASSET_IN_USE = "ASSET_IN_USE"
     UNSUPPORTED_FILE = "UNSUPPORTED_FILE"
     FILE_TOO_LARGE = "FILE_TOO_LARGE"
+    PROJECT_NEEDS_PHOTO = "PROJECT_NEEDS_PHOTO"
+    PROJECT_LOCKED = "PROJECT_LOCKED"
     FFMPEG_MISSING = "FFMPEG_MISSING"
     MEDIA_UNREADABLE = "MEDIA_UNREADABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
@@ -96,6 +98,16 @@ ERRORS: dict[ErrorCode, ErrorInfo] = {
     ),
     ErrorCode.FILE_TOO_LARGE: ErrorInfo(
         413, "파일이 너무 큽니다.", "영상 길이를 줄이거나 화질을 낮춰서 다시 올려 주세요."
+    ),
+    ErrorCode.PROJECT_NEEDS_PHOTO: ErrorInfo(
+        422,
+        "콘텐츠를 만들려면 제품 사진이 1장 이상 필요합니다.",
+        "제품 상세 화면에서 사진을 올린 뒤 골라 주세요.",
+    ),
+    ErrorCode.PROJECT_LOCKED: ErrorInfo(
+        409,
+        "제작이 시작된 콘텐츠는 설정을 바꿀 수 없습니다.",
+        "제작이 끝난 뒤 새 콘텐츠로 다시 만들어 주세요.",
     ),
     ErrorCode.FFMPEG_MISSING: ErrorInfo(
         503,

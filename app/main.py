@@ -19,10 +19,12 @@ from app.core.settings import Settings, get_settings
 from app.media.probe import WINDOWS_INSTALL_GUIDE, check_ffmpeg
 from app.products.routes import api as products_api
 from app.products.routes import pages as products_pages
+from app.projects.routes import api as projects_api
+from app.projects.routes import pages as projects_pages
 from app.web.templating import templates
 
 APP_NAME = "COCOCHOI AI CONTENT FACTORY"
-APP_VERSION = "0.0.6"
+APP_VERSION = "0.0.7"
 
 
 _HTTP_STATUS_TO_CODE = {
@@ -91,6 +93,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(products_pages)
     app.include_router(assets_api)
     app.include_router(assets_pages)
+    app.include_router(projects_api)
+    app.include_router(projects_pages)
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError):
