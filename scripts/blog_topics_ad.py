@@ -1,7 +1,8 @@
 """블로그 주제 발굴 (네이버 검색광고 API만 사용)
 
 사용법:
-    python scripts/blog_topics_ad.py
+    python scripts/blog_topics_ad.py            # 일반 (쿠팡+블로그 균형)
+    python scripts/blog_topics_ad.py --adpost   # 애드포스트용 (정보형 우선, 상위 30개)
 
 하는 일:
   1. 4050 여성 겨울 패션 씨앗 키워드 30개 → 연관 키워드 전부 수집
@@ -49,14 +50,14 @@ FASHION_WORDS = [
     "아웃터", "외투", "조끼", "베스트", "후리스", "플리스", "하객룩", "코디", "패션", "스웨이드", "세무",
     "가죽", "레더", "트위드", "퀼팅", "누빔", "구스", "덕다운", "다운", "터틀넥", "폴라", "목폴라", "레깅스",
     "부츠", "머플러", "목도리", "스카프", "숄", "판초", "케이프", "퍼", "밍크", "캐시미어", "울", "모직",
-    "핸드메이드", "기모", "룩", "옷", "카디건", "롱스커트", "앵클",
+    "핸드메이드", "기모", "룩", "옷", "카디건", "롱스커트", "앵클", "보풀",
 ]
 # 남성·아동·학생 및 패션이 아닌 뜻(자동차 머플러 등)
 EXCLUDE_WORDS = [
     "남자", "남성", "맨즈", "중딩", "고딩", "초딩", "아동", "키즈", "주니어", "초등", "중학생", "고등학생", "학생", "교복", "아기",
     "유아", "베이비", "남아", "여아", "신생아", "군대", "깔깔이", "커플", "강아지", "애견", "반려",
     "자동차", "차량", "오토바이", "배기", "소음기", "튜닝", "울산", "울릉", "울진", "숄더", "퍼프", "퍼스트", "퍼즐",
-    "이불", "베개", "침구", "토퍼", "담요", "도매", "만들기", "뜨기", "도안", "뜨개", "털실", "원단", "수선",
+    "벽지", "카페트", "카펫", "커튼", "소파", "쇼파", "운동화", "신발", "이불", "베개", "침구", "토퍼", "담요", "도매", "만들기", "뜨기", "도안", "뜨개", "털실", "원단", "수선",
 ]
 # 브랜드명 (목록에 있는 것만 걸러짐 — 모르는 브랜드는 남을 수 있음)
 BRANDS = [
@@ -71,26 +72,49 @@ BRANDS = [
     "베스띠벨리", "씨", "지고트", "미샤", "구호", "띠어리", "산드로", "마쥬", "토리버치", "마이클코어스",
     "코치", "MLB", "엠엘비", "질스튜어트", "커버낫", "마르디", "디스이즈네버댓", "로라로라", "아떼",
     "브랜디", "지그재그", "에이블리", "쿠팡", "이마트", "홈쇼핑", "아울렛", "SUADE", "톰하디", "크롬하츠",
-    "시슬리", "에고이스트", "케네스레이디", "리스트", "쉬즈미스", "JJ지고트", "BCBG", "모그", "르샵", "티엔지티",
+    "다이소", "암웨이", "다우니", "글리너", "아이프리", "시슬리", "에고이스트", "케네스레이디", "리스트", "쉬즈미스", "JJ지고트", "BCBG", "모그", "르샵", "티엔지티",
     "올젠", "인디안", "세정", "까스텔바작", "파리게이츠", "와이드앵글", "르까프", "엘레강스", "몬테밀라노",
 ]
 # 정보형 신호 단어
-INFO_WORDS = ["코디", "관리", "세탁", "차이", "고르는", "추천", "방법", "보관", "뜻", "입는", "매는", "스타일링",
+INFO_WORDS = ["코디", "관리", "세탁", "보풀", "제거", "차이", "고르는", "추천", "방법", "보관", "뜻", "입는", "매는", "스타일링",
               "룩", "브랜드순위", "가격", "후기", "비교"]
+# 이 단어가 있으면 광고 신호와 상관없이 정보형 (방법을 찾는 검색이 분명함. 광고는 세탁소·제품이 붙는 것)
+STRONG_INFO_WORDS = ["세탁", "관리", "보관", "매는법", "보풀제거", "손질", "얼룩", "줄었", "늘어난"]
+# 단, 이런 말로 끝나면 '제품'을 찾는 검색 → 구매형 (보풀제거기, 얼룩제거제, 세탁세제)
+PRODUCT_WORDS = ["제거기", "제거제", "세제", "크리너", "클리너", "스프레이"]
+# 애드포스트 모드: 관리 키워드는 '소재 묶음 + 관리 방법'으로 묶음
+CARE_FAMILIES = [
+    ("패딩", ["패딩", "구스", "오리털", "덕다운", "다운", "점퍼", "파카"]),
+    ("스웨이드·가죽·무스탕", ["스웨이드", "세무", "가죽", "레더", "무스탕", "양털", "어그"]),
+    ("니트·캐시미어·울코트", ["니트", "캐시미어", "울", "코트", "가디건", "스웨터", "목도리", "머플러"]),
+]
+CARE_ONE_TOPIC = {"보풀": "니트·코트", "얼룩": "옷"}
+CARE_ACTIONS = [("보풀", ["보풀"]), ("얼룩", ["얼룩"]), ("보관", ["보관"]), ("세탁·관리", ["세탁", "관리", "손질"])]
 # 정보형/구매형 판단 기준값 (실행 결과의 분포를 보고 정함)
 CTR_LOW = 1.0      # 클릭률(%)이 이보다 낮으면 '광고를 덜 누르는 검색' = 정보 찾는 사람
 DEPTH_LOW = 10     # 광고 깊이(검색 결과에 붙는 광고 개수)가 이보다 낮으면 광고주 관심이 적음
 # 주제 묶을 때 떼어낼 꾸밈말 (떼고 남은 말이 같으면 같은 주제)
 MODIFIERS = [
-    "40대", "50대", "4050", "중년", "여성", "여자", "엄마", "미시", "겨울", "가을", "간절기", "데일리",
+    "40대", "50대", "4050", "중년", "여성", "여자", "엄마", "미시", "초겨울", "늦가을", "겨울", "가을", "간절기", "데일리",
     "블랙", "브라운", "베이지", "그레이", "회색", "네이비", "아이보리", "카키", "화이트", "흰색", "검정",
     "검은색", "차콜", "와인", "카멜", "크림", "추천", "코디", "인기", "예쁜", "고급", "명품", "저렴한", "세일",
     "할인", "빅사이즈", "오버핏", "루즈핏", "브랜드", "순위", "가격", "후기", "스타일", "룩",
+    "하는방법", "하는법", "방법", "집에서",
 ]
 # 같은 물건의 다른 이름 (주제 묶을 때만 사용)
 SYNONYMS = {"앵글": "앵클", "골덴": "코듀로이", "바지": "팬츠", "재킷": "자켓", "카디건": "가디건", "세무": "스웨이드", "후리스": "플리스"}
 SECOND_ROUND = 30  # 2차 확장: 1차 상위 주제 몇 개의 메인 키워드로 연관 키워드를 한 번 더 모을지
 COMP_SCORE = {"낮음": 1.0, "중간": 0.6, "높음": 0.2}
+
+# ---------------- 애드포스트 모드 (--adpost) 설정
+ADPOST = "--adpost" in sys.argv
+ADPOST_SEEDS = [
+    "패딩세탁", "롱패딩세탁", "니트보풀제거", "니트세탁", "캐시미어세탁", "코트보관", "울코트세탁",
+    "스웨이드관리", "무스탕세탁", "목도리매는법", "스카프매는법", "하객룩", "겨울코디", "레이어드코디",
+]
+ADPOST_TOP_N = 30
+MAIN_BEST = (1_000, 20_000)   # 메인 키워드 검색량이 이 범위면 만점 (너무 크면 대형 블로그와 경쟁)
+BRAND_CMP_WORDS = ["브랜드", "명품", "순위", "vs", "VS", "비교"]  # 브랜드 비교 키워드 → 감점
 # ================================================================
 
 
@@ -141,10 +165,12 @@ def build_row(it):
     kw = it["relKeyword"]
     ctr = clk / vol * 100 if vol else 0
     depth = to_float(it.get("plAvgDepth"))
-    has_word = any(w in kw for w in INFO_WORDS)
+    has_word = any(w in kw.replace("얼룩", "") for w in INFO_WORDS)   # '얼룩' 안의 '룩'은 코디 뜻이 아님
     low_ad = (ctr < CTR_LOW) + (depth < DEPTH_LOW)
     # 정보 단어(코디·관리·차이 등)가 있고, 클릭률·광고 깊이 중 하나 이상이 낮으면 정보형. 나머지는 구매형
-    kind = "정보형" if has_word and low_ad >= 1 else "구매형"
+    strong = any(w in kw for w in STRONG_INFO_WORDS) and not any(w in kw for w in PRODUCT_WORDS)
+    product = any(w in kw for w in PRODUCT_WORDS)   # 제거기·세제 등 제품 검색은 무조건 구매형
+    kind = "정보형" if not product and (strong or (has_word and low_ad >= 1)) else "구매형"
     return {
         "키워드": kw, "월검색량": vol, "PC": pc, "모바일": mo,
         "모바일비중": round(mo / vol * 100, 1) if vol else 0,
@@ -153,12 +179,29 @@ def build_row(it):
     }
 
 
+def care_key(kw):
+    """애드포스트 모드에서 관리 키워드면 '#소재#방법' 키를, 아니면 None."""
+    if any(w in kw for w in PRODUCT_WORDS):
+        return None
+    action = next((a for a, ws in CARE_ACTIONS if any(w in kw.replace("캐주얼룩", "") for w in ws)), None)
+    if not action:
+        return None
+    if action in CARE_ONE_TOPIC:   # 보풀·얼룩은 소재 상관없이 한 주제
+        return f"#{CARE_ONE_TOPIC[action]}#{action}"
+    fam = next((f for f, ws in CARE_FAMILIES if any(w in kw for w in ws)), "옷")
+    return f"#{fam}#{action}"
+
+
 def core(kw):
+    if ADPOST and (ck := care_key(kw)):
+        return ck
     s = kw
     for a, b in SYNONYMS.items():
         s = s.replace(a, b)
     for m in sorted(MODIFIERS, key=len, reverse=True):
         s = s.replace(m, "")
+    if not s and "코디" in kw:   # '겨울코디', '여자겨울코디' 처럼 꾸밈말만 남으면 → '코디' 한 주제
+        return "코디"
     return s or kw
 
 
@@ -169,9 +212,11 @@ def group(rows):
     # 작은 묶음(2개 이하)은 그 이름을 포함하는 더 큰 묶음에 합치기 (예: 스웨이드블루종 X / 롱패딩 ← 구스다운롱패딩)
     keys = sorted(g, key=lambda k: -len(g[k]))
     for k in sorted(g, key=len, reverse=True):
-        if k not in g or len(g[k]) > 2:
+        if k not in g or len(g[k]) > 2 or k.startswith("#"):
             continue
-        target = next((t for t in keys if t != k and t in g and len(t) >= 3 and t in k and len(g[t]) >= 3), None)
+        # 애드포스트 모드는 관리 주제가 작게 흩어져 있어 작은 묶음끼리도 합침
+        need = 1 if ADPOST else 3
+        target = next((t for t in keys if t != k and t in g and len(t) >= 3 and t in k and len(g[t]) >= need), None)
         if target:
             g[target].extend(g.pop(k))
     topics = []
@@ -199,7 +244,35 @@ def group(rows):
     return topics
 
 
+def score_adpost(t):
+    # 정보형 40 = 주제 안 정보형 검색량 비율 25 + 메인 키워드가 정보형이면 15
+    s_kind = 25 * t["info_share"] + (15 if t["main"]["유형"] == "정보형" else 0)
+    # 메인 검색량 25: 1,000~20,000 만점. 그보다 적으면 300까지 줄어들고, 많으면 50,000에서 12점
+    v = t["main"]["월검색량"]
+    lo, hi = MAIN_BEST
+    if v < lo:
+        s_main = 25 * max(math.log(v / 300), 0) / math.log(lo / 300)
+    elif v > hi:
+        s_main = 25 - 13 * min(math.log(v / hi) / math.log(50_000 / hi), 1)
+    else:
+        s_main = 25
+    # 낮은 경쟁도 20 = 광고 경쟁도 12 + 광고 깊이 8
+    s_comp = 12 * t["comp"] + 8 * min(max((15 - t["depth"]) / 10, 0), 1)
+    # 모바일 10
+    s_mob = 10 * min(max((t["mobile"] - 70) / 25, 0), 1)
+    # 주제 전체 검색량 5 (서브까지 합친 유입 크기)
+    tv = min(max(t["total"], 1_000), 100_000)
+    s_tot = 5 * math.log(tv / 1_000) / math.log(100)
+    # 브랜드 비교 감점: 브랜드·명품·순위·비교 키워드의 검색량 비율 × 최대 -20
+    used = [t["main"]] + t["subs"]
+    bvol = sum(r["월검색량"] for r in used if any(w in r["키워드"] for w in BRAND_CMP_WORDS))
+    s_brand = -20 * bvol / t["total"]
+    return round(s_kind), round(s_main), round(s_comp), round(s_mob), round(s_tot), round(s_brand)
+
+
 def score(t):
+    if ADPOST:
+        return score_adpost(t)
     # 검색량 35: 주제 전체 검색량 500 → 0점, 100,000 → 35점 (로그 비례)
     v = min(max(t["total"], 500), 100_000)
     s_vol = 35 * (math.log(v) - math.log(500)) / (math.log(100_000) - math.log(500))
@@ -215,9 +288,30 @@ def score(t):
 
 def title(t):
     m = t["main"]["키워드"]
+    if t["key"].startswith("#"):
+        fam, action = t["key"][1:].split("#")
+        if action == "보풀":
+            return "니트·코트 보풀 제거, 옷 상하지 않게 없애는 법 + 보풀 덜 나는 니트 고르는 기준"
+        return {
+            "보풀": f"{fam} 보풀 제거, 옷 상하지 않게 없애는 법 + 보풀 덜 나는 옷 고르는 기준",
+            "얼룩": f"{fam} 얼룩 제거, 세탁소 가기 전 집에서 먼저 해볼 것 3가지",
+            "보관": f"{fam} 보관법, 내년에도 새것처럼 입는 옷장 정리 방법",
+            "세탁·관리": f"{fam} 세탁·관리법, 집에서 해도 망치지 않는 순서 — 10년 차 MD가 알려드려요",
+        }[action]
     item = t["key"] if len(t["key"]) >= 2 else core(m)
+    for w in ["세탁법", "세탁", "보관법", "보관", "관리법", "관리", "보풀제거", "매는법"]:
+        item = item.replace(w, "")
+    item = item or m
     sub = next((s["키워드"] for s in t["subs"] if core(s["키워드"]) == item and s["키워드"] != m), None)
     words = " ".join(r["키워드"] for r in [t["main"]] + t["subs"])
+    if t["key"] == "코디":
+        return f"{m}, 40·50대가 가진 옷으로 세련돼 보이는 겨울 코디 공식 5가지"
+    if "보풀" in words:
+        return f"{item} 보풀 제거, 옷 상하지 않게 없애는 법 + 보풀 덜 나는 옷 고르는 기준"
+    if "세탁" in words:
+        return f"{item} 세탁, 집에서 해도 망치지 않는 순서 — 10년 차 MD가 알려드려요"
+    if "보관" in words:
+        return f"{item} 보관법, 내년에도 새것처럼 입는 정리 방법"
     if "매는법" in words:
         return f"{item} 매는 법, 40·50대 얼굴이 환해 보이는 3가지 ({m} 고르는 기준까지)"
     if "관리" in words or "세탁" in words:
@@ -262,18 +356,22 @@ def change(kw, vol, prev):
 def main():
     if not (API_KEY and SECRET and CUSTOMER_ID):
         sys.exit("[오류] .env 에 NAVER_AD_API_KEY / NAVER_AD_SECRET / NAVER_AD_CUSTOMER_ID 가 필요합니다.")
+    global PREFIX, TOP_N
+    seeds = SEEDS + ADPOST_SEEDS if ADPOST else SEEDS
+    if ADPOST:
+        PREFIX, TOP_N = "blog_topics_adpost_", ADPOST_TOP_N
     today = date.today().isoformat()
     REPORTS.mkdir(exist_ok=True)
 
-    print(f"1) 씨앗 {len(SEEDS)}개로 연관 키워드 모으는 중...")
-    raw = fetch_related(SEEDS)
+    print(f"1) 씨앗 {len(seeds)}개로 연관 키워드 모으는 중...")
+    raw = fetch_related(seeds)
     rows = [r for r in map(build_row, raw.values()) if keep(r["키워드"], r["월검색량"])]
     # 2차 확장: 1차 상위 주제의 메인 키워드로 한 번 더 모아 서브 키워드를 채움
     first = group(rows)
     for t in first:
         t["score"] = sum(score(t))
     hints = [t["main"]["키워드"] for t in sorted(first, key=lambda t: -t["score"])[:SECOND_ROUND]]
-    hints = [h for h in hints if h not in SEEDS]
+    hints = [h for h in hints if h not in seeds]
     print(f"   2차 확장: 상위 주제 메인 키워드 {len(hints)}개로 한 번 더 수집...")
     raw.update(fetch_related(hints))
     rows = [r for r in map(build_row, raw.values()) if keep(r["키워드"], r["월검색량"])]
@@ -285,8 +383,8 @@ def main():
 
     topics = group(rows)
     for t in topics:
-        sv, sc, sm, sk = score(t)
-        t.update(s_vol=sv, s_comp=sc, s_mob=sm, s_kind=sk, score=sv + sc + sm + sk, title=title(t))
+        parts = score(t)
+        t.update(parts=parts, score=sum(parts), title=title(t))
     topics.sort(key=lambda t: -t["score"])
     print(f"3) 주제 {len(topics)}개로 묶음")
 
@@ -318,13 +416,23 @@ def main():
 
     rising = sorted((r for r in rows if r["변화"].startswith("▲")),
                     key=lambda r: -int(r["변화"][1:-1]))
+    if ADPOST:
+        head = f"# 애드포스트 우선순위 TOP {TOP_N} ({today})"
+        score_desc = ("- 점수(100) = 정보형 40(정보형 검색량 비율 25 + 메인이 정보형 15) + 메인 검색량 25"
+                      f"({MAIN_BEST[0]:,}~{MAIN_BEST[1]:,} 만점) + 낮은 경쟁도 20 + 모바일 10 + 주제 전체 검색량 5"
+                      " − 브랜드 비교 감점(브랜드·명품·순위·비교 키워드 비율 × 최대 20)")
+        score_note = "점수 괄호: 정보형/메인검색량/경쟁도/모바일/주제검색량/브랜드감점"
+    else:
+        head = f"# 블로그 주제 TOP {TOP_N} — 검색광고 API ({today})"
+        score_desc = "- 점수(100) = 검색량 35 + 낮은 경쟁도 25(광고 경쟁도 15 + 광고 깊이 10) + 모바일 비중 15 + 유형 25(정보형 검색량 비율: 전부 구매형 10 → 전부 정보형 25)"
+        score_note = "점수 괄호: 검색량/경쟁도/모바일/유형"
     lines = [
-        f"# 블로그 주제 TOP {TOP_N} — 검색광고 API ({today})", "",
+        head, "",
         f"- 출처: 네이버 검색광고 키워드도구 API (최근 30일 기준 월 검색량), 조회일 {today}",
-        f"- 씨앗 {len(SEEDS)}개 (+ 2차 확장 {len(hints)}개) → 연관 키워드 {len(raw):,}개 수집 → 필터 후 {len(rows)}개 → 주제 {len(topics)}개",
+        f"- 씨앗 {len(seeds)}개 (+ 2차 확장 {len(hints)}개) → 연관 키워드 {len(raw):,}개 수집 → 필터 후 {len(rows)}개 → 주제 {len(topics)}개",
         f"- 필터: 월 검색량 {MIN_VOL:,}~{MAX_VOL:,}, 패션 관련, 남성·아동·학생·브랜드명 제외 (브랜드는 목록 기준이라 일부 남을 수 있음)",
         f"- 유형: 클릭률 {CTR_LOW}% 미만·광고 깊이 {DEPTH_LOW} 미만이면 광고 신호 낮음. 정보 단어(코디·관리·차이·추천 등)+광고 신호 낮음 → 정보형",
-        "- 점수(100) = 검색량 35 + 낮은 경쟁도 25(광고 경쟁도 15 + 광고 깊이 10) + 모바일 비중 15 + 유형 25(정보형 검색량 비율: 전부 구매형 10 → 전부 정보형 25)",
+        score_desc,
         "- 유형 칸: 정보형(+구매) = 정보형이 절반 이상이고 구매 키워드도 섞인 주제 → 정보 글에 쿠팡 링크를 곁들이기 좋음",
         f"- 지난 결과 비교: {prev_date + ' 대비 (▲ 10% 이상 상승, NEW 새로 등장)' if prev_date else '첫 실행이라 비교 없음 — 다음 실행부터 표시'}",
         "",
@@ -336,8 +444,8 @@ def main():
         subs = ", ".join(kw_txt(s) for s in t["subs"]) or "-"
         lines.append(
             f"| {i} | **{kw_txt(t['main'])}** | {subs} | {t['kind']} | {t['total']:,} | {t['mobile']:.0f}% | "
-            f"{t['ctr']:.2f}% | {t['depth']:.1f} | **{t['score']}** ({t['s_vol']}/{t['s_comp']}/{t['s_mob']}/{t['s_kind']}) | {t['title']} |")
-    lines += ["", "점수 괄호: 검색량/경쟁도/모바일/유형", "",
+            f"{t['ctr']:.2f}% | {t['depth']:.1f} | **{t['score']}** ({'/'.join(map(str, t['parts']))}) | {t['title']} |")
+    lines += ["", score_note, "",
               "## 참고: 서브 키워드가 3개 미만이라 순위에서 뺀 큰 키워드 (검색량 순)", ""]
     solo = sorted((t for t in topics if len(t["subs"]) < 3), key=lambda t: -t["total"])[:10]
     lines += [f"- {kw_txt(t['main'])} {', '.join(kw_txt(x) for x in t['subs'])} — {t['kind']}, 점수 {t['score']}" for t in solo]
